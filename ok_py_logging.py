@@ -1,6 +1,6 @@
 """
-A log formatter to provide prettier output for messages from
-logging.error() and friends. Automatically activated by import.
+A log formatter to provide prettier output for messages from logging.error()
+and friends, plus antispam measures. Automatically activated by import.
 """
 
 import logging
@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 
-_max_per_minute = 10
+_max_per_minute = 10  # per message text
 
 def config(level=logging.INFO, max_per_minute=10):
     global _max_per_minute
