@@ -1,0 +1,6 @@
+[tools]
+uv = "latest"
+
+[settings]
+experimental = true
+python_uv_venv_auto = true
