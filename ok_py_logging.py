@@ -57,13 +57,13 @@ class _LogFilter(logging.Filter):
             self._recently_seen.clear()
             self._last_minute = minute
 
+        if _max_per_minute <= 0:
+            return True  # suppression disabled
+
         sig = _LogFilter.DIGITS.sub("#", str(record.msg))
         count = self._recently_seen.get(sig, 0)
         if count < 0:
-            self._recently_seen[sig] = count  # Changed this line
             return False  # already suppressed
-        elif _max_per_minute <= 0:
-            return True  # suppression disabled
         elif count < _max_per_minute:
             self._recently_seen[sig] = count + 1
             return True
@@ -78,11 +78,19 @@ class _LogFilter(logging.Filter):
 
 def _sys_exception_hook(exc_type, exc_value, exc_tb):
     if issubclass(exc_type, KeyboardInterrupt):
-        logging.critical("*** KeyboardInterrupt (^C)! ***")
+        logging.critical("\n🛑 KeyboardInterrupt (^C)! 🛑 💥")
     else:
         exc_info = (exc_type, exc_value, exc_tb)
         logging.critical("Uncaught exception", exc_info=exc_info)
     os._exit(-1)  # pylint: disable=protected-access
+
+
+def _sys_unraisable_hook(unr):
+    if unr.err_msg:
+        logging.warning("%s: %s", unr.err_msg, repr(unr.object))
+    else:
+        exc_info = (unr.exc_type, unr.exc_value, unr.exc_traceback)
+        logging.warning("Uncatchable exception", exc_info=exc_info)
 
 
 def _thread_exception_hook(args):
@@ -98,6 +106,10 @@ _log_handler = logging.StreamHandler(stream=sys.stderr)
 _log_handler.setFormatter(_LogFormatter())
 _log_handler.addFilter(_LogFilter())
 logging.basicConfig(level=logging.INFO, handlers=[_log_handler])
-sys.excepthook = _sys_exception_hook
-threading.excepthook = _thread_exception_hook
+if getattr(sys, "__excepthook__", None) in (sys.excepthook, None):
+    sys.excepthook = _sys_exception_hook
+if getattr(sys, "__unraisablehook__", None) in (sys.unraisablehook, None):
+    sys.unraisablehook = _sys_unraisable_hook
+if getattr(threading, "__excepthook__", None) in (threading.excepthook, None):
+    threading.excepthook = _thread_exception_hook
 sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
