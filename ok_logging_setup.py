@@ -1,21 +1,57 @@
 """
 A log formatter to provide prettier output for messages from logging.error()
-and friends, plus antispam measures. Automatically activated by import.
+and friends, plus anti-logspam measures and various sane defaults.
+
+Activated with ok_logging_setup.install().
 """
 
 import logging
 import os
 import re
+import signal
 import sys
 import threading
 import time
 
 _max_per_minute = 10  # per message text
 
-def config(level=logging.INFO, max_per_minute=10):
+_skip_traceback_for = ()
+
+
+def install(*, default_level="INFO", default_per_minute=10):
+    if not isinstance(default_level, (str, int)):
+        raise TypeError(f"Bad default_level {default_level:r} != str or int")
+    if not isinstance(default_per_minute, int):
+        raise TypeError(f"Bad default_per_minute {default_per_minute:r} != int")
+
+    if logging.root.handlers:
+        raise RuntimeError(
+            "ok_logging_setup.install() called with logging already configured"
+        )
+
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling by default
+
+    log_handler = logging.StreamHandler(stream=sys.stderr)
+    log_handler.setFormatter(_LogFormatter())
+    log_handler.addFilter(_LogFilter())
+    logging.basicConfig(level=default_level, handlers=[log_handler])
+
+    sys.excepthook = _sys_exception_hook
+    sys.unraisablehook = _sys_unraisable_hook
+    threading.excepthook = _thread_exception_hook
+    sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
+
     global _max_per_minute
-    _max_per_minute = max_per_minute
-    logging.getLogger().setLevel(level)
+    _max_per_minute = default_per_minute
+
+
+def skip_traceback_for(klass):
+    if not issubclass(klass, BaseException):
+        raise TypeError(f"Bad klass {klass:r} != BaseException subclass")
+
+    global _skip_traceback_for
+    if not issubclass(klass, _skip_traceback_for):
+        _skip_traceback_for += (klass,)
 
 
 class _LogFormatter(logging.Formatter):
@@ -34,12 +70,13 @@ class _LogFormatter(logging.Formatter):
             out = f"🔥 {out}"
         elif record.levelno >= logging.WARNING:
             out = f"⚠️ {out}"
-        if record.exc_info and not record.exc_text:
-            record.exc_text = self.formatException(record.exc_info)
-        if record.exc_text:
-            out = f"{out.strip()}\n{record.exc_text}"
-        if record.stack_info:
-            out = f"{out.strip()}\n{record.stack_info}"
+        if record.exc_info:
+            if issubclass(record.exc_info[0], _skip_traceback_for):
+                record.exc_info = record.exc_info[:2] + (None,)
+                record.stack_info = None
+            out = f"{out.rstrip()}\n{self.formatException(record.exc_info)}"
+            if record.stack_info:
+                out = f"{out.rstrip()}\nStack:\n{record.stack_info}"
         return pre + out.strip() + post
 
 
@@ -58,17 +95,17 @@ class _LogFilter(logging.Filter):
             self._last_minute = minute
 
         if _max_per_minute <= 0:
-            return True  # suppression disabled
+            return True    # suppression disabled
 
         sig = _LogFilter.DIGITS.sub("#", str(record.msg))
         count = self._recently_seen.get(sig, 0)
         if count < 0:
-            return False  # already suppressed
+            return False    # already suppressed
         elif count < _max_per_minute:
             self._recently_seen[sig] = count + 1
             return True
         else:
-            self._recently_seen[sig] = -1  # suppressed until minute tick
+            self._recently_seen[sig] = -1    # suppressed until minute tick
             until = time.localtime((minute + 1) * 60)
             old_message = record.getMessage()
             record.msg = "%s [suppressing until %02d:%02d]"
@@ -82,7 +119,7 @@ def _sys_exception_hook(exc_type, exc_value, exc_tb):
     else:
         exc_info = (exc_type, exc_value, exc_tb)
         logging.critical("Uncaught exception", exc_info=exc_info)
-    os._exit(-1)  # pylint: disable=protected-access
+    os._exit(-1)    # pylint: disable=protected-access
 
 
 def _sys_unraisable_hook(unr):
@@ -90,7 +127,7 @@ def _sys_unraisable_hook(unr):
         logging.warning("%s: %s", unr.err_msg, repr(unr.object))
     else:
         exc_info = (unr.exc_type, unr.exc_value, unr.exc_traceback)
-        logging.warning("Uncatchable exception", exc_info=exc_info)
+        logging.critical("Uncatchable exception", exc_info=exc_info)
 
 
 def _thread_exception_hook(args):
@@ -98,18 +135,4 @@ def _thread_exception_hook(args):
     logging.critical(
         'Uncaught exception in thread "%s"', args.thread.name, exc_info=exc_info
     )
-    os._exit(-1)  # pylint: disable=protected-access
-
-
-# Initialize on import.
-_log_handler = logging.StreamHandler(stream=sys.stderr)
-_log_handler.setFormatter(_LogFormatter())
-_log_handler.addFilter(_LogFilter())
-logging.basicConfig(level=logging.INFO, handlers=[_log_handler])
-if getattr(sys, "__excepthook__", None) in (sys.excepthook, None):
-    sys.excepthook = _sys_exception_hook
-if getattr(sys, "__unraisablehook__", None) in (sys.unraisablehook, None):
-    sys.unraisablehook = _sys_unraisable_hook
-if getattr(threading, "__excepthook__", None) in (threading.excepthook, None):
-    threading.excepthook = _thread_exception_hook
-sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
+    os._exit(-1)    # pylint: disable=protected-access
