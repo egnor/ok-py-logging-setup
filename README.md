@@ -30,8 +30,8 @@ def main():
     ... run your app ...
 ```
 
-This does the following:
-- installs one stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig), with log level INFO to start
+The `install()` function does the following:
+- makes a root stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig), with log level INFO to start
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
 - adds a filter with simple logspam-protection (described below)
@@ -39,15 +39,15 @@ This does the following:
 - changes `sys.stdout` to line buffered, so `print` and logs interleave correctly
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
-Then you can go ahead and use standard `logging` as usual, calling `.info`, `.error`, etc methods. You can call these functions on the `logger` module itself, or if you're feeling fancy create per-subsystem `Logger` objects so log messages are tagged for filtering convenience via `$OK_LOGGING_LEVEL` (see below).
-
-Advanced options:
+Advanced usage:
 - pass a string-string dict to `ok_logging_setup.install` to set defaults for the environment variables below
 - call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stack traces for exceptions of that type
 
+After installation, use standard `logging` normally, calling `.info`, `.error`, etc methods. As usual, you can call these functions on the `logger` module itself, or if you're feeling fancy create per-subsystem `Logger` objects so log messages are tagged for filtering convenience via `$OK_LOGGING_LEVEL` (see below).
+
 ## Configuration
 
-### `$OK_LOGGING_LEVEL`
+### `$OK_LOGGING_LEVEL` (default `INFO`)
 
 - set to a log level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`) to only print messages of that severity or higher
 - use `loggertag=severity` to set the log level for a specific logger tag, eg. `my.library=DEBUG`
@@ -55,9 +55,12 @@ Advanced options:
 
 The most specific matching rule will apply to any given message, eg. in the last example above a logger named `noisy.library.submodule` would only print `CRITICAL` messages.
 
-### `$OK_LOGGING_REPEAT_PER_MINUTE`
+### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 10)
 
 ### `$OK_LOGGING_TIME_FORMAT` and `$OK_LOGGING_TIMEZONE`
+
+- to timestamp log messages, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes)
+- if set, `$OK_LOGGING_TIMEZONE` ([from this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) is used for timestamps
 
 ## Log format
 
@@ -81,7 +84,7 @@ If the message is logged from a named thread or a named asyncio task, the name i
 🔥 [Task Name] This is an error message in a task
 ```
 
-If you want timestamps, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes) of your choice:
+If you want timestamps, set `$OK_LOGGING_TIME_FORMAT` (see above):
 ```
 $ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
 ...
