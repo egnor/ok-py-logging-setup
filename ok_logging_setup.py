@@ -157,7 +157,7 @@ def _sys_exception_hook(exc_type, exc_value, exc_tb):
     else:
         exc_info = (exc_type, exc_value, exc_tb)
         logging.critical("Uncaught exception", exc_info=exc_info)
-    os._exit(-1)  # pylint: disable=protected-access
+    os._exit(1)  # pylint: disable=protected-access
 
 
 def _sys_unraisable_hook(unr):
@@ -166,9 +166,10 @@ def _sys_unraisable_hook(unr):
     else:
         exc_info = (unr.exc_type, unr.exc_value, unr.exc_traceback)
         logging.critical("Uncatchable exception", exc_info=exc_info)
+    os._exit(1)  # pylint: disable=protected-access
 
 
 def _thread_exception_hook(args):
     exc_info = (args.exc_type, args.exc_value, args.exc_traceback)
     logging.critical("Uncaught exception in thread", exc_info=exc_info)
-    os._exit(-1)  # pylint: disable=protected-access
+    os._exit(1)  # pylint: disable=protected-access

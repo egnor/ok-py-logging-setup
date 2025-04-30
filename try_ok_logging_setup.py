@@ -11,8 +11,8 @@ import time_machine
 
 """Exercise logging with ok_logging_setup. Used by test_ok_logging_setup.py"""
 
-class SkipTrackbackException(Exception): pass
-ok_logging_setup.skip_traceback_for(SkipTrackbackException)
+class SkipTracebackException(Exception): pass
+ok_logging_setup.skip_traceback_for(SkipTracebackException)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--fake-time")
@@ -34,8 +34,10 @@ async def task_function():
 def thread_function():
     logging.info("This is an info message in a thread")
     logging.error("This is an error message in a thread")
-    if args.uncaught_thread_exception:
-        raise Exception("This is an uncaught thread exception")
+
+
+def thread_exception():
+    raise Exception("This is an uncaught thread exception")
 
 
 def main():
@@ -53,9 +55,14 @@ def main():
         raise Exception("This is an uncaught exception")
 
     if args.uncaught_skip_traceback:
-        raise SkipTrackbackException(
+        raise SkipTracebackException(
             "This is an uncaught exception with traceback skipped"
         )
+
+    if args.uncaught_thread_exception:
+        thread = threading.Thread(name="Thread Name", target=thread_exception)
+        thread.start()
+        thread.join()
 
     if args.unraisable_exception:
         class DestructorRaises:
