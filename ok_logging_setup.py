@@ -5,49 +5,47 @@ and friends, plus anti-logspam measures and various sane defaults.
 Activated with ok_logging_setup.install().
 """
 
+import datetime
 import logging
 import os
 import re
 import signal
 import sys
 import threading
-import time
+import zoneinfo
 
-_max_per_minute = 10  # per message text
+ENV_LEVEL_RE = re.compile(r"(?i)\s*((?P<module>[\w.]+)\s*=)?\s*(?P<level>\w+)")
+TASK_IGNORE_RE = re.compile(r"(|Task-\d+)")
+THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
 
+_logger = logging.getLogger(__name__)  # very meta
+_repeat_per_minute = 10  # max per message 'signature' (format minus digits)
 _skip_traceback_for = ()
+_time_format = ""
+_timezone = None
 
 
-def install(*, default_level="INFO", default_per_minute=10):
-    if not isinstance(default_level, (str, int)):
-        raise TypeError(f"Bad default_level {default_level:r} != str or int")
-    if not isinstance(default_per_minute, int):
-        raise TypeError(f"Bad default_per_minute {default_per_minute:r} != int")
-
+def install(*, env_defaults={}):
     if logging.root.handlers:
-        raise RuntimeError(
-            "ok_logging_setup.install() called with logging already configured"
-        )
+        raise RuntimeError(f"ok_logging_setup install after logging configured")
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling by default
 
     log_handler = logging.StreamHandler(stream=sys.stderr)
     log_handler.setFormatter(_LogFormatter())
     log_handler.addFilter(_LogFilter())
-    logging.basicConfig(level=default_level, handlers=[log_handler])
+    logging.basicConfig(level=logging.INFO, handlers=[log_handler])
 
     sys.excepthook = _sys_exception_hook
     sys.unraisablehook = _sys_unraisable_hook
     threading.excepthook = _thread_exception_hook
     sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
-
-    global _max_per_minute
-    _max_per_minute = default_per_minute
+    _configure({**env_defaults, **os.environ})
 
 
 def skip_traceback_for(klass):
     if not issubclass(klass, BaseException):
-        raise TypeError(f"Bad klass {klass:r} != BaseException subclass")
+        raise TypeError(f"Bad skip_traceback_for value {klass!r}")
 
     global _skip_traceback_for
     if not issubclass(klass, _skip_traceback_for):
@@ -60,6 +58,10 @@ class _LogFormatter(logging.Formatter):
         ml = m.lstrip()
         out = ml.rstrip()
         pre, post = m[: len(m) - len(ml)], ml[len(out) :]
+        if not THREAD_IGNORE_RE.fullmatch(record.threadName or ""):
+            out = f"<{record.threadName}> {out}"
+        if not TASK_IGNORE_RE.fullmatch(record.taskName or ""):
+            out = f"[{record.taskName}] {out}"
         if record.name != "root":
             out = f"{record.name}: {out}"
         if record.levelno < logging.INFO:
@@ -70,6 +72,9 @@ class _LogFormatter(logging.Formatter):
             out = f"🔥 {out}"
         elif record.levelno >= logging.WARNING:
             out = f"⚠️ {out}"
+        if _time_format:
+            dt = datetime.datetime.fromtimestamp(record.created, _timezone)
+            out = f"{dt.strftime(_time_format)} {out}"
         if record.exc_info:
             if issubclass(record.exc_info[0], _skip_traceback_for):
                 record.exc_info = record.exc_info[:2] + (None,)
@@ -78,6 +83,38 @@ class _LogFormatter(logging.Formatter):
             if record.stack_info:
                 out = f"{out.rstrip()}\nStack:\n{record.stack_info}"
         return pre + out.strip() + post
+
+
+def _configure(env):
+    for env_level in env.pop("OK_LOGGING_LEVEL", "").split(","):
+        if env_match := ENV_LEVEL_RE.fullmatch(env_level):
+            module = env_match.group("module")
+            level = env_match.group("level").upper()
+            logger = logging.getLogger(module) if module else logging.root
+            try:
+                logger.setLevel(level)
+            except ValueError:
+                _logger.warning(f'Bad $OK_LOGGING_LEVEL level "{level}"')
+        elif env_level.strip():
+            _logger.warning(f'Bad $OK_LOGGING_LEVEL entry "{env_level}"')
+
+    if env_repeat := env.pop("OK_LOGGING_REPEAT_PER_MINUTE", ""):
+        try:
+            _repeat_per_minute = int(env_repeat)
+        except ValueError:
+            _logger.warning(f'Bad $OK_LOGGING_REPEAT_PER_MINUTE "{env_repeat}"')
+
+    global _time_format, _timezone
+    if _time_format := env.pop("OK_LOGGING_TIME_FORMAT", ""):
+        if env_timezone := env.pop("OK_LOGGING_TIMEZONE", ""):
+            try:
+                _timezone = zoneinfo.ZoneInfo(env_timezone)
+            except zoneinfo.ZoneInfoNotFoundError:
+                _logger.warning(f'Bad $OK_LOGGING_TIMEZONE "{env_timezone}"')
+
+    for key, value in env.items():
+        if key.upper().startswith("OK_LOGGING") and value:
+            _logger.warning("Unknown variable $%s=%s", key, value)
 
 
 class _LogFilter(logging.Filter):
@@ -94,22 +131,23 @@ class _LogFilter(logging.Filter):
             self._recently_seen.clear()
             self._last_minute = minute
 
-        if _max_per_minute <= 0:
-            return True    # suppression disabled
+        if _repeat_per_minute <= 0:
+            return True  # suppression disabled
 
         sig = _LogFilter.DIGITS.sub("#", str(record.msg))
         count = self._recently_seen.get(sig, 0)
         if count < 0:
-            return False    # already suppressed
-        elif count < _max_per_minute:
+            return False  # already suppressed
+        elif count < _repeat_per_minute:
             self._recently_seen[sig] = count + 1
             return True
         else:
-            self._recently_seen[sig] = -1    # suppressed until minute tick
-            until = time.localtime((minute + 1) * 60)
+            self._recently_seen[sig] = -1  # suppressed until minute tick
+            until_sec = (minute + 1) * 60
+            until_dt = datetime.datetime.fromtimestamp(until_sec, _timezone)
             old_message = record.getMessage()
             record.msg = "%s [suppressing until %02d:%02d]"
-            record.args = (old_message, until.tm_hour, until.tm_min)
+            record.args = (old_message, until_dt.hour, until_dt.minute)
             return True
 
 
@@ -119,7 +157,7 @@ def _sys_exception_hook(exc_type, exc_value, exc_tb):
     else:
         exc_info = (exc_type, exc_value, exc_tb)
         logging.critical("Uncaught exception", exc_info=exc_info)
-    os._exit(-1)    # pylint: disable=protected-access
+    os._exit(-1)  # pylint: disable=protected-access
 
 
 def _sys_unraisable_hook(unr):
@@ -132,7 +170,5 @@ def _sys_unraisable_hook(unr):
 
 def _thread_exception_hook(args):
     exc_info = (args.exc_type, args.exc_value, args.exc_traceback)
-    logging.critical(
-        'Uncaught exception in thread "%s"', args.thread.name, exc_info=exc_info
-    )
-    os._exit(-1)    # pylint: disable=protected-access
+    logging.critical("Uncaught exception in thread", exc_info=exc_info)
+    os._exit(-1)  # pylint: disable=protected-access
