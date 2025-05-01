@@ -1,21 +1,21 @@
 # ok-py-logging-setup
 
-Simple, very opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var configuration, logspam protection and minimalist formatting.
+Simple, opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var configuration, logspam limiting and minimalist formatting.
 
 You probably won't want to use this. You should consider these libraries instead:
 - [structlog](https://www.structlog.org/) - fancy logging system with interconnects to Python logging
 - [Rich](https://github.com/Textualize/rich#readme) - pretty text formatter, includes a logging prettifier
 - [Pretty Pie Log](https://github.com/chanpreet3000/pretty-pie-log) - logging prettifier
 
-## Cantankerous opinion-ifesto
+## Opinion-ifesto
 
 Python's standard logging facility is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters configured in app code. There is an [external configuration system](https://docs.python.org/latest/library/logging.config.html) with ini-files and/or a custom socket protocol (!) that can customize that whole tree of loggers, handlers, formatters, and filters.
 
 Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. We just want an easy way to dial verbosity up and down for the app or subsystems depending on what we're debugging. That's what this library does (plus a few other tweaks I like).
 
-Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. Better to leave space for the actual message, you can always search the code to find where it comes from.
+Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions, don't worry.)
 
-## App code
+## Usage
 
 Add this package as a dependency:
 - `pip install ok-py-logging-setup`
@@ -30,7 +30,7 @@ def main():
     ... run your app ...
 ```
 
-The `install()` function does the following:
+The `ok_logging_setup.install()` call does the following:
 - makes a root stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig), with log level INFO to start
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
@@ -40,12 +40,14 @@ The `install()` function does the following:
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
 Advanced usage:
-- pass a string-string dict to `ok_logging_setup.install` to set defaults for the environment variables below
+- pass a string-string dict to `ok_logging_setup.install({ ... })` to set defaults for configuration variables below
 - call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stack traces for exceptions of that type
 
-After installation, use standard `logging` normally, calling `.info`, `.error`, etc methods. As usual, you can call these functions on the `logger` module itself, or if you're feeling fancy create per-subsystem `Logger` objects so log messages are tagged for filtering convenience via `$OK_LOGGING_LEVEL` (see below).
+After installation, use `.info`, `.error`, etc as normal on the `logger` module itself, or if you're fancy, use per-subsystem `Logger` objects to log messages for selective filtering (see `$OK_LOGGING_LEVEL` below).
 
 ## Configuration
+
+These variables can be set in the environment, or passed in a dict to `ok_logging_setup.install({ ... })` (the environment takes precedence).
 
 ### `$OK_LOGGING_LEVEL` (default `INFO`)
 
@@ -57,10 +59,46 @@ The most specific matching rule will apply to any given message, eg. in the last
 
 ### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 10)
 
+The number of messages with the same "signature" (message format with digits removed) allowed in one minute before being blocked by spam protection (see below). Set to `0` to disable the spam filter entirely.
+
 ### `$OK_LOGGING_TIME_FORMAT` and `$OK_LOGGING_TIMEZONE`
 
 - to timestamp log messages, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes)
 - if set, `$OK_LOGGING_TIMEZONE` ([from this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) is used for timestamps
+
+## Spam protection
+
+If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate spam, `ok_logging_setup.install` adds a filter that checks if a log message with the same "signature" (format string with digits removed) more than N times in a one minute period, subsequent instances of that same "signature" are dropped until the minute rolls over. It looks like this:
+
+```
+12:34:00 Spam message 1
+12:34:01 Spam message 2
+12:34:02 Spam message 3
+12:34:03 Spam message 4
+12:34:04 Spam message 5
+12:34:05 Spam message 6
+12:34:06 Spam message 7
+12:34:07 Spam message 8
+12:34:08 Spam message 9
+12:34:09 Spam message 10
+12:34:10 Spam message 11 [suppressing until 12:35]
+12:35:00 Spam message 61
+12:35:01 Spam message 62
+12:35:02 Spam message 63
+12:35:03 Spam message 64
+12:35:04 Spam message 65
+12:35:05 Spam message 66
+12:35:06 Spam message 67
+12:35:07 Spam message 68
+12:35:08 Spam message 69
+12:35:09 Spam message 70
+12:35:10 Spam message 71 [suppressing until 12:36]
+12:36:00 Spam message 121
+12:36:01 Spam message 122
+...
+```
+
+The "suppressing until ..." messages are appended so you know when log messages are potentially skipped. Spam filtering can be tuned by setting `$OK_LOGGING_REPEAT_PER_MINUTE` to the maximum number of messages with the same signature to allow per minute, or `0` to disable the filter entirely.
 
 ## Log format
 
