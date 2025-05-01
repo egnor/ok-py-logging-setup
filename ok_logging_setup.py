@@ -1,6 +1,6 @@
 """
-A log formatter to provide prettier output for messages from logging.error()
-and friends, plus anti-logspam measures and various sane defaults.
+Simple opinionated defaults for Python logging, with minimalist formatting,
+anti-logspam measures and other minor tweaks.
 
 Activated with ok_logging_setup.install().
 """
@@ -26,6 +26,13 @@ _timezone = None
 
 
 def install(*, env_defaults={}):
+    """
+    Sets up Python logging the ok_logging_setup way. Must be called without
+    any other logging handlers added. See README.md for full documentation.
+
+    :param env_defaults: Default environment variables for configuration.
+    """
+
     if logging.root.handlers:
         raise RuntimeError(f"ok_logging_setup install after logging configured")
 
@@ -44,6 +51,12 @@ def install(*, env_defaults={}):
 
 
 def skip_traceback_for(klass):
+    """
+    Add to the list of exception classes where tracebacks are suppressed
+    in regular logging or when handling uncaught exceptions. Good for
+    exceptions with self-evident causes where stack traces are noise.
+    """
+
     if not issubclass(klass, BaseException):
         raise TypeError(f"Bad skip_traceback_for value {klass!r}")
 
