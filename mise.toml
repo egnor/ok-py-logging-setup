@@ -1,4 +1,5 @@
 [tools]
+python = "3.9"
 uv = "latest"
 
 [settings]

@@ -73,7 +73,7 @@ class _LogFormatter(logging.Formatter):
         pre, post = m[: len(m) - len(ml)], ml[len(out) :]
         if not THREAD_IGNORE_RE.fullmatch(record.threadName or ""):
             out = f"<{record.threadName}> {out}"
-        if not TASK_IGNORE_RE.fullmatch(record.taskName or ""):
+        if not TASK_IGNORE_RE.fullmatch(getattr(record, "taskName", "") or ""):
             out = f"[{record.taskName}] {out}"
         if record.name != "root":
             out = f"{record.name}: {out}"

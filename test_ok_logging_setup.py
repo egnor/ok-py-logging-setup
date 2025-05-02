@@ -17,6 +17,7 @@ def get_stderr(*args, **kw):
 
 
 def test_defaults():
+    # Note, [Task Name] isn't supported in python 3.9
     assert get_stderr() == textwrap.dedent("""\
         This is an info message
 
@@ -28,8 +29,8 @@ def test_defaults():
         🔥 foo: This is an error message for 'foo'
         bar.bat: This is an info message for 'bar.bat'
         🔥 bar.bat: This is an error message for 'bar.bat'
-        [Task Name] This is an info message in a task
-        🔥 [Task Name] This is an error message in a task
+        This is an info message in a task
+        🔥 This is an error message in a task
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
     """)
