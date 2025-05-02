@@ -22,7 +22,7 @@ Add this package as a dependency:
 - OR just copy `ok_logging_setup.py` (it has no dependencies)
 
 Import the module and call `ok_logging_setup.install()` near program start:
-```
+```python
 import ok_logging_setup
 ...
 def main():
@@ -123,7 +123,7 @@ If the message is logged from a named thread or a named asyncio task, the name i
 ```
 
 If you want timestamps, set `$OK_LOGGING_TIME_FORMAT` (see above):
-```
+```bash
 $ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
 ...
 04-30 22:53:26 🔥 This is an error message
