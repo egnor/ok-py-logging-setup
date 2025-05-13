@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import asyncio.events
+import atexit
 import logging
 import ok_logging_setup
 import threading
@@ -18,12 +19,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--fake-time")
 parser.add_argument("--spam", type=int, default=0)
 parser.add_argument("--spam-sleep", type=float, default=0)
-except_args = parser.add_mutually_exclusive_group()
-except_args.add_argument("--uncaught-exception", action="store_true")
-except_args.add_argument("--uncaught-skip-traceback", action="store_true")
-except_args.add_argument("--uncaught-thread-exception", action="store_true")
-except_args.add_argument("--unraisable-exception", action="store_true")
+fatal_args = parser.add_mutually_exclusive_group()
+fatal_args.add_argument("--keyboard-interrupt", action="store_true")
+fatal_args.add_argument("--ok-logging-exit", action="store_true")
+fatal_args.add_argument("--sys-exit", action="store_true")
+fatal_args.add_argument("--uncaught-exception", action="store_true")
+fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
+fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
+fatal_args.add_argument("--unraisable-exception", action="store_true")
 args = parser.parse_args()
+
+
+def atexit_hook():
+    logging.info("This is an info message in an atexit hook")
 
 
 async def task_function():
@@ -41,6 +49,9 @@ def thread_exception():
 
 
 def main():
+    # Register atexit to verify
+    atexit.register(atexit_hook)
+
     # Setup logging
     ok_logging_setup.install()
 
@@ -51,6 +62,15 @@ def main():
         fake_time = time_travel.start()
 
     # Optional fatal error modes
+    if args.keyboard_interrupt:
+        raise KeyboardInterrupt()
+
+    if args.ok_logging_exit:
+        ok_logging_setup.exit("This is a program exit message")
+
+    if args.sys_exit:
+        raise SystemExit(2)
+
     if args.uncaught_exception:
         raise Exception("This is an uncaught exception")
 
@@ -85,7 +105,7 @@ def main():
     logging.debug("This is a debug message")
     logging.info("This is an info message")
     logging.warning("\n    This is a warning message with whitespace    \n")
-    logging.error("This is an error message")
+    logging.error("😎 This is an error message with custom emoji")
     logging.critical("This is a critical message")
 
     foo_logger = logging.getLogger("foo")

@@ -23,7 +23,7 @@ def test_defaults():
 
             ⚠️ This is a warning message with whitespace    
 
-        🔥 This is an error message
+        😎 This is an error message with custom emoji
         💥 This is a critical message
         foo: This is an info message for 'foo'
         🔥 foo: This is an error message for 'foo'
@@ -33,12 +33,29 @@ def test_defaults():
         🔥 This is an error message in a task
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
+        This is an info message in an atexit hook
+    """)
+
+
+def test_keyboard_interrupt():
+    stderr = get_stderr("--keyboard-interrupt", check=False)
+    assert stderr == textwrap.dedent("""\
+
+        ❌ KeyboardInterrupt (^C)! ❌
+        This is an info message in an atexit hook
+    """)
+
+
+def test_logging_exit():
+    stderr = get_stderr("--ok-logging-exit", check=False)
+    assert stderr == textwrap.dedent("""\
+        💥 This is a program exit message
+        This is an info message in an atexit hook
     """)
 
 
 def test_uncaught_exception():
-    args = ["--uncaught-exception"]
-    stderr = get_stderr(*args, check=False)
+    stderr = get_stderr("--uncaught-exception", check=False)
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 Uncaught exception
         Traceback (most recent call last):
@@ -47,21 +64,21 @@ def test_uncaught_exception():
           File XXX, in main
             raise Exception("This is an uncaught exception")
         Exception: This is an uncaught exception
+        This is an info message in an atexit hook
     """)
 
 
 def test_uncaught_skip_traceback():
-    args = ["--uncaught-skip-traceback"]
-    stderr = get_stderr(*args, check=False)
-    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
+    stderr = get_stderr("--uncaught-skip-traceback", check=False)
+    assert stderr == textwrap.dedent("""\
         💥 Uncaught exception
         SkipTracebackException: This is an uncaught exception with traceback skipped
+        This is an info message in an atexit hook
     """)
 
 
 def test_uncaught_thread_exception():
-    args = ["--uncaught-thread-exception"]
-    stderr = get_stderr(*args, check=False)
+    stderr = get_stderr("--uncaught-thread-exception", check=False)
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 <Thread Name> Uncaught exception in thread
         Traceback (most recent call last):
@@ -76,8 +93,7 @@ def test_uncaught_thread_exception():
 
 
 def test_unraisable_exception():
-    args = ["--unraisable-exception"]
-    stderr = get_stderr(*args, check=False)
+    stderr = get_stderr("--unraisable-exception", check=False)
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 Uncatchable exception
         Traceback (most recent call last):
@@ -136,4 +152,5 @@ def test_repeat_limit():
         2020-01-01 00:01:45 Spam message 22
         2020-01-01 00:01:50 Spam message 23 [suppressing until 00:02]
         2020-01-01 00:02:00 Spam message 25
+        2020-01-01 00:02:05 This is an info message in an atexit hook
     """)

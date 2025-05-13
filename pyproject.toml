@@ -1,6 +1,6 @@
 [project]
 name = "ok-logging-setup"
-version = "0.1"
+version = "0.2"
 description = "Simple minimalist Python logging defaults"
 readme = "README.md"
 authors = [{ name = "Dan Egnor", email="egnor@ofb.net" }]

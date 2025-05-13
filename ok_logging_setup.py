@@ -12,6 +12,7 @@ import re
 import signal
 import sys
 import threading
+import unicodedata
 import zoneinfo
 
 ENV_LEVEL_RE = re.compile(r"(?i)\s*((?P<module>[\w.]+)\s*=)?\s*(?P<level>\w+)")
@@ -50,6 +51,16 @@ def install(*, env_defaults={}):
     _configure({**env_defaults, **os.environ})
 
 
+def exit(msg, *args, code=1, **kw):
+    """
+    Log a critical error (no stack) with the root logger, then exit the process.
+    Typically used as a convenient error-and-exit for CLI utilities.
+    """
+
+    logging.critical(msg, *args, **kw)
+    raise SystemExit(code)
+
+
 def skip_traceback_for(klass):
     """
     Add to the list of exception classes where tracebacks are suppressed
@@ -78,13 +89,13 @@ class _LogFormatter(logging.Formatter):
         if record.name != "root":
             out = f"{record.name}: {out}"
         if record.levelno < logging.INFO:
-            out = f"🕸  {out}"
+            out = f"🕸  {out}"  # skip _starts_with_emoji for performance?
         elif record.levelno >= logging.CRITICAL:
-            out = f"💥 {out}"
+            if not _starts_with_emoji(out): out = f"💥 {out}"
         elif record.levelno >= logging.ERROR:
-            out = f"🔥 {out}"
+            if not _starts_with_emoji(out): out = f"🔥 {out}"
         elif record.levelno >= logging.WARNING:
-            out = f"⚠️ {out}"
+            if not _starts_with_emoji(out): out = f"⚠️ {out}"
         if _time_format:
             dt = datetime.datetime.fromtimestamp(record.created, _timezone)
             out = f"{dt.strftime(_time_format)} {out}"
@@ -96,38 +107,6 @@ class _LogFormatter(logging.Formatter):
             if record.stack_info:
                 out = f"{out.rstrip()}\nStack:\n{record.stack_info}"
         return pre + out.strip() + post
-
-
-def _configure(env):
-    for env_level in env.pop("OK_LOGGING_LEVEL", "").split(","):
-        if env_match := ENV_LEVEL_RE.fullmatch(env_level):
-            module = env_match.group("module")
-            level = env_match.group("level").upper()
-            logger = logging.getLogger(module) if module else logging.root
-            try:
-                logger.setLevel(level)
-            except ValueError:
-                _logger.warning(f'Bad $OK_LOGGING_LEVEL level "{level}"')
-        elif env_level.strip():
-            _logger.warning(f'Bad $OK_LOGGING_LEVEL entry "{env_level}"')
-
-    if env_repeat := env.pop("OK_LOGGING_REPEAT_PER_MINUTE", ""):
-        try:
-            _repeat_per_minute = int(env_repeat)
-        except ValueError:
-            _logger.warning(f'Bad $OK_LOGGING_REPEAT_PER_MINUTE "{env_repeat}"')
-
-    global _time_format, _timezone
-    if _time_format := env.pop("OK_LOGGING_TIME_FORMAT", ""):
-        if env_timezone := env.pop("OK_LOGGING_TIMEZONE", ""):
-            try:
-                _timezone = zoneinfo.ZoneInfo(env_timezone)
-            except zoneinfo.ZoneInfoNotFoundError:
-                _logger.warning(f'Bad $OK_LOGGING_TIMEZONE "{env_timezone}"')
-
-    for key, value in env.items():
-        if key.upper().startswith("OK_LOGGING") and value:
-            _logger.warning("Unknown variable $%s=%s", key, value)
 
 
 class _LogFilter(logging.Filter):
@@ -164,25 +143,68 @@ class _LogFilter(logging.Filter):
             return True
 
 
+def _configure(env):
+    for env_level in env.pop("OK_LOGGING_LEVEL", "").split(","):
+        if env_match := ENV_LEVEL_RE.fullmatch(env_level):
+            module = env_match.group("module")
+            level = env_match.group("level").upper()
+            logger = logging.getLogger(module) if module else logging.root
+            try:
+                logger.setLevel(level)
+            except ValueError:
+                _logger.warning(f'Bad $OK_LOGGING_LEVEL level "{level}"')
+        elif env_level.strip():
+            _logger.warning(f'Bad $OK_LOGGING_LEVEL entry "{env_level}"')
+
+    if env_repeat := env.pop("OK_LOGGING_REPEAT_PER_MINUTE", ""):
+        try:
+            _repeat_per_minute = int(env_repeat)
+        except ValueError:
+            _logger.warning(f'Bad $OK_LOGGING_REPEAT_PER_MINUTE "{env_repeat}"')
+
+    global _time_format, _timezone
+    if _time_format := env.pop("OK_LOGGING_TIME_FORMAT", ""):
+        if env_timezone := env.pop("OK_LOGGING_TIMEZONE", ""):
+            try:
+                _timezone = zoneinfo.ZoneInfo(env_timezone)
+            except zoneinfo.ZoneInfoNotFoundError:
+                _logger.warning(f'Bad $OK_LOGGING_TIMEZONE "{env_timezone}"')
+
+    for key, value in env.items():
+        if key.upper().startswith("OK_LOGGING") and value:
+            _logger.warning("Unknown variable $%s=%s", key, value)
+
+
+def _starts_with_emoji(str):
+    return unicodedata.category(str[:1]) == "So"
+
+
 def _sys_exception_hook(exc_type, exc_value, exc_tb):
     if issubclass(exc_type, KeyboardInterrupt):
-        logging.critical("\n🛑 KeyboardInterrupt (^C)! 🛑 💥")
+        logging.critical("\n❌ KeyboardInterrupt (^C)! ❌")
     else:
         exc_info = (exc_type, exc_value, exc_tb)
         logging.critical("Uncaught exception", exc_info=exc_info)
-    os._exit(1)  # pylint: disable=protected-access
+
+    # after return, the python runtime will execute atexit handlers and exit
 
 
 def _sys_unraisable_hook(unr):
     if unr.err_msg:
-        logging.warning("%s: %s", unr.err_msg, repr(unr.object))
+        logging.critical("%s: %s", unr.err_msg, repr(unr.object))
     else:
         exc_info = (unr.exc_type, unr.exc_value, unr.exc_traceback)
         logging.critical("Uncatchable exception", exc_info=exc_info)
+
+    # the python runtime would continue, instead exit the program by policy
+    # (this does unfortunately bypass atexit handlers)
     os._exit(1)  # pylint: disable=protected-access
 
 
 def _thread_exception_hook(args):
     exc_info = (args.exc_type, args.exc_value, args.exc_traceback)
     logging.critical("Uncaught exception in thread", exc_info=exc_info)
+
+    # otehr threads would continue, instead exit the whole program by policy
+    # (this does unfortunately bypass atexit handlers)
     os._exit(1)  # pylint: disable=protected-access
