@@ -38,7 +38,7 @@ The `ok_logging_setup.install()` call does the following:
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
 - adds a filter with simple logspam-protection (described below)
-- adds uncaught exception handlers that uses this logger (and exits)
+- adds uncaught exception handlers that use this logger (and exits)
 - changes `sys.stdout` to line buffered, so `print` and logs interleave correctly
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
