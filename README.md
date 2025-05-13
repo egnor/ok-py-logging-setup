@@ -12,11 +12,11 @@ You probably won't want to use this. You should consider these libraries instead
 
 ## Opinion-ifesto
 
-Python's standard logging facility is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters configured in app code. There is an [external configuration system](https://docs.python.org/latest/library/logging.config.html) with ini-files and/or a custom socket protocol (!) that can customize that whole tree of loggers, handlers, formatters, and filters.
+Python's standard logging facility is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters configured in app code, plus a similarly (over)complicated [external configuration system](https://docs.python.org/latest/library/logging.config.html) with ini-files and/or a custom socket protocol (!) to customize that whole tree of loggers, handlers, formatters, and filters.
 
 Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. We just want an easy way to dial verbosity up and down for the app or subsystems depending on what we're debugging. That's what this library does (plus a few other tweaks I like).
 
-Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions, don't worry.)
+Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions.)
 
 ## Usage
 
@@ -38,13 +38,16 @@ The `ok_logging_setup.install()` call does the following:
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
 - adds a filter with simple logspam-protection (described below)
-- adds uncaught exception handlers that use this logger (and exits)
+- adds an uncaught exception handler that uses this logger
+- adds a thread exception handler that uses this logger *and exits*
+- adds an "unraisable" exception handler that uses this logger *and exits*
 - changes `sys.stdout` to line buffered, so `print` and logs interleave correctly
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
 Advanced usage:
 - pass a string-string dict to `ok_logging_setup.install({ ... })` to set defaults for configuration variables below
-- call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stack traces for exceptions of that type
+- call `ok_logging_setup.exit(msg, ...)` to log a `.critical(msg, ...)` error and immediately `sys.exit(1)`
+- call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stacks for unhandled exceptions of that type
 
 After installation, use `.info`, `.error`, etc as normal on the `logger` module itself, or if you're fancy, use per-subsystem `Logger` objects to log messages for selective filtering (see `$OK_LOGGING_LEVEL` below).
 
@@ -113,6 +116,8 @@ This is an INFO message
 🔥 This is an ERROR message
 💥 This is a CRITICAL message
 ```
+
+(If the message already starts with an emoji, no emoji prefix is added; your emoji is assumed to convey appropriate importance.)
 
 If the message is logged with a named `Logger` object, the name is added as a prefix:
 ```
