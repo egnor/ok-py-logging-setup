@@ -14,7 +14,7 @@ You probably won't want to use this. You should consider these libraries instead
 
 Python's standard logging facility is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters configured in app code, plus a similarly (over)complicated [external configuration system](https://docs.python.org/latest/library/logging.config.html) with ini-files and/or a custom socket protocol (!) to customize that whole tree of loggers, handlers, formatters, and filters.
 
-Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. We just want an easy way to dial verbosity up and down for the app or subsystems depending on what we're debugging. That's what this library does (plus a few other tweaks I like).
+Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. I just need an easy way to dial verbosity up and down for the app or subsystems I'm debugging. That's what this library offers.
 
 Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions.)
 
