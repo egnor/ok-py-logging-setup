@@ -1,4 +1,4 @@
-# ok-py-logging-setup
+# ok-logging-setup for Python
 
 Simple, opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var configuration, logspam limiting and minimalist formatting.
 
@@ -21,7 +21,7 @@ Also, most logging formatters spend too much real estate on log levels, source l
 ## Usage
 
 Add this package as a dependency:
-- `pip install ok-py-logging-setup`
+- `pip install ok-logging-setup`
 - OR just copy `ok_logging_setup.py` (it has no dependencies)
 
 Import the module and call `ok_logging_setup.install()` near program start:
