@@ -8,6 +8,7 @@ You probably won't want to use this. You should consider these libraries instead
 - [Pretty Pie Log](https://github.com/chanpreet3000/pretty-pie-log) - logging prettifier
 - [logging518](https://github.com/mharrisb1/logging518) - configure logging in pyproject.toml (or another TOML file)
 - [Easy Logging](https://github.com/Kiennguyen08/easy-logging-setup) - logging setup with YAML configuration
+- [simple-logging-setup](https://github.com/fscherf/simple-logging-setup) - a colorful take on logging defaults
 - [setup logging for me](https://github.com/jmansilla/setup_logging_for_me) - even more minimal and idiosyncratic than this package!
 
 ## Opinion-ifesto
