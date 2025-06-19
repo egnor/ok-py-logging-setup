@@ -6,12 +6,14 @@ Activated with ok_logging_setup.install().
 """
 
 import datetime
+import io
 import logging
 import os
 import re
 import signal
 import sys
 import threading
+import typing
 import unicodedata
 import zoneinfo
 
@@ -21,12 +23,12 @@ THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
 
 _logger = logging.getLogger(__name__)  # very meta
 _repeat_per_minute = 10  # max per message 'signature' (format minus digits)
-_skip_traceback_for = ()
+_skip_traceback_for: tuple[typing.Type[BaseException], ...] = ()
 _time_format = ""
 _timezone = None
 
 
-def install(*, env_defaults={}):
+def install(*, env_defaults: typing.Dict[str, str]={}):
     """
     Sets up Python logging the ok_logging_setup way. Must be called without
     any other logging handlers added. See README.md for full documentation.
@@ -35,7 +37,7 @@ def install(*, env_defaults={}):
     """
 
     if logging.root.handlers:
-        raise RuntimeError(f"ok_logging_setup install after logging configured")
+        raise RuntimeError("ok_logging_setup install after logging configured")
 
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling by default
 
@@ -47,11 +49,12 @@ def install(*, env_defaults={}):
     sys.excepthook = _sys_exception_hook
     sys.unraisablehook = _sys_unraisable_hook
     threading.excepthook = _thread_exception_hook
-    sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
     _configure({**env_defaults, **os.environ})
 
 
-def exit(msg, *args, code=1, **kw):
+def exit(msg: str, *args, code: int=1, **kw):
     """
     Log a critical error (no stack) with the root logger, then exit the process.
     Typically used as a convenient error-and-exit for CLI utilities.
@@ -61,7 +64,7 @@ def exit(msg, *args, code=1, **kw):
     raise SystemExit(code)
 
 
-def skip_traceback_for(klass):
+def skip_traceback_for(klass: typing.Type[BaseException]):
     """
     Add to the list of exception classes where tracebacks are suppressed
     in regular logging or when handling uncaught exceptions. Good for
@@ -77,35 +80,39 @@ def skip_traceback_for(klass):
 
 
 class _LogFormatter(logging.Formatter):
-    def format(self, record):
-        m = record.getMessage()
+    def format(self, rec: logging.LogRecord):
+        m = rec.getMessage()
         ml = m.lstrip()
         out = ml.rstrip()
         pre, post = m[: len(m) - len(ml)], ml[len(out) :]
-        if not THREAD_IGNORE_RE.fullmatch(record.threadName or ""):
-            out = f"<{record.threadName}> {out}"
-        if not TASK_IGNORE_RE.fullmatch(getattr(record, "taskName", "") or ""):
-            out = f"[{record.taskName}] {out}"
-        if record.name != "root":
-            out = f"{record.name}: {out}"
-        if record.levelno < logging.INFO:
+        if not THREAD_IGNORE_RE.fullmatch(rec.threadName or ""):
+            out = f"<{rec.threadName}> {out}"
+        if not TASK_IGNORE_RE.fullmatch(getattr(rec, "taskName", "") or ""):
+            out = f"[{getattr(rec, 'taskName')}] {out}"
+        if rec.name != "root":
+            out = f"{rec.name}: {out}"
+        if rec.levelno < logging.INFO:
             out = f"🕸  {out}"  # skip _starts_with_emoji for performance?
-        elif record.levelno >= logging.CRITICAL:
-            if not _starts_with_emoji(out): out = f"💥 {out}"
-        elif record.levelno >= logging.ERROR:
-            if not _starts_with_emoji(out): out = f"🔥 {out}"
-        elif record.levelno >= logging.WARNING:
-            if not _starts_with_emoji(out): out = f"⚠️ {out}"
+        elif rec.levelno >= logging.CRITICAL:
+            if not _starts_with_emoji(out):
+                out = f"💥 {out}"
+        elif rec.levelno >= logging.ERROR:
+            if not _starts_with_emoji(out):
+                out = f"🔥 {out}"
+        elif rec.levelno >= logging.WARNING:
+            if not _starts_with_emoji(out):
+                out = f"⚠️ {out}"
         if _time_format:
-            dt = datetime.datetime.fromtimestamp(record.created, _timezone)
+            dt = datetime.datetime.fromtimestamp(rec.created, _timezone)
             out = f"{dt.strftime(_time_format)} {out}"
-        if record.exc_info:
-            if issubclass(record.exc_info[0], _skip_traceback_for):
-                record.exc_info = record.exc_info[:2] + (None,)
-                record.stack_info = None
-            out = f"{out.rstrip()}\n{self.formatException(record.exc_info)}"
-            if record.stack_info:
-                out = f"{out.rstrip()}\nStack:\n{record.stack_info}"
+        exc, stack = rec.exc_info, rec.stack_info
+        if exc and exc[0] and issubclass(exc[0], _skip_traceback_for):
+            exc = (exc[0], exc[1], None)
+            stack = None
+        if exc:
+            out = f"{out.rstrip()}\n{self.formatException(exc)}"
+        if stack:
+            out = f"{out.rstrip()}\nStack:\n{stack}"
         return pre + out.strip() + post
 
 
@@ -117,7 +124,7 @@ class _LogFilter(logging.Filter):
         self._last_minute = 0
         self._recently_seen = {}
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord):
         minute = record.created // 60
         if minute != self._last_minute:
             self._recently_seen.clear()

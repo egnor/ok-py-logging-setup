@@ -1,11 +1,14 @@
 [project]
 name = "ok-logging-setup"
-version = "0.2"
+version = "0.3"
 description = "Simple minimalist Python logging defaults"
 readme = "README.md"
 authors = [{ name = "Dan Egnor", email="egnor@ofb.net" }]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "mypy>=1.16.1",
+    "ruff>=0.12.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest", "time-machine"]
@@ -13,6 +16,10 @@ dev = ["pytest", "time-machine"]
 [project.urls]
 Homepage = "https://github.com/egnor/ok-py-logging-setup#readme"
 Repository = "https://github.com/egnor/ok-py-logging-setup.git"
+
+[tool.mypy]
+exclude_gitignore = true
+files = "."
 
 [build-system]
 requires = ["hatchling"]

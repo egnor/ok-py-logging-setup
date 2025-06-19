@@ -4,7 +4,6 @@ Test for ok_logging_setup.py, via try_ok_logging_setup.py as a subprocess.
 
 import os
 import pathlib
-import pytest
 import re
 import subprocess
 import textwrap

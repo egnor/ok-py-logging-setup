@@ -12,7 +12,9 @@ import time_machine
 
 """Exercise logging with ok_logging_setup. Used by test_ok_logging_setup.py"""
 
-class SkipTracebackException(Exception): pass
+class SkipTracebackException(Exception):
+    pass
+
 ok_logging_setup.skip_traceback_for(SkipTracebackException)
 
 parser = argparse.ArgumentParser()
