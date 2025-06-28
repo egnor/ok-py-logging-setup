@@ -23,7 +23,7 @@ Also, most logging formatters spend too much real estate on log levels, source l
 
 Add this package as a dependency:
 - `pip install ok-logging-setup`
-- OR just copy `ok_logging_setup.py` (it has no dependencies)
+- OR just copy the `ok_logging_setup/` dir (it has no dependencies)
 
 Import the module and call `ok_logging_setup.install()` near program start:
 ```python
