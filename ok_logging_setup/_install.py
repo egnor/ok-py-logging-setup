@@ -18,6 +18,8 @@ ENV_LEVEL_RE = re.compile(r"(?i)\s*((?P<module>[\w.]+)\s*=)?\s*(?P<level>\w+)")
 
 _logger = logging.getLogger(__name__)  # very meta
 
+_handler = None
+
 
 def install(*, env_defaults: typing.Dict[str, str]={}):
     """
@@ -27,21 +29,21 @@ def install(*, env_defaults: typing.Dict[str, str]={}):
     :param env_defaults: Default environment variables for configuration.
     """
 
-    if logging.root.handlers:
-        raise RuntimeError("ok_logging_setup install after logging configured")
+    global _handler
+    if not logging.root.handlers:
+        signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling
+        _handler = logging.StreamHandler(stream=sys.stderr)
+        _handler.setFormatter(ok_logging_setup._formatter.LogFormatter())
+        _handler.addFilter(ok_logging_setup._filter.LogFilter())
+        logging.basicConfig(level=logging.INFO, handlers=[_handler])
+        sys.excepthook = _sys_exception_hook
+        sys.unraisablehook = _sys_unraisable_hook
+        threading.excepthook = _thread_exception_hook
+        if isinstance(sys.stdout, io.TextIOWrapper):
+            sys.stdout.reconfigure(line_buffering=True)  # print immediately
+    elif logging.root.handlers[0] is not _handler:
+        raise RuntimeError("ok_logging_setup.install() with logging configured")
 
-    signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling by default
-
-    log_handler = logging.StreamHandler(stream=sys.stderr)
-    log_handler.setFormatter(ok_logging_setup._formatter.LogFormatter())
-    log_handler.addFilter(ok_logging_setup._filter.LogFilter())
-    logging.basicConfig(level=logging.INFO, handlers=[log_handler])
-
-    sys.excepthook = _sys_exception_hook
-    sys.unraisablehook = _sys_unraisable_hook
-    threading.excepthook = _thread_exception_hook
-    if isinstance(sys.stdout, io.TextIOWrapper):
-        sys.stdout.reconfigure(line_buffering=True)  # log prints immediately
     _configure({**env_defaults, **os.environ})
 
 

@@ -57,6 +57,9 @@ def main():
     # Setup logging
     ok_logging_setup.install()
 
+    # Do it again to make sure that's okay
+    ok_logging_setup.install()
+
     # Fake timestamp if requested
     fake_time = None
     if args.fake_time:
