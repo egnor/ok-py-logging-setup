@@ -64,6 +64,10 @@ These variables can be set in the environment, or passed in a dict to `ok_loggin
 
 The most specific matching rule will apply to any given message, eg. in the last example above a logger named `noisy.library.submodule` would only print `CRITICAL` messages.
 
+### `$OK_LOGGING_OUTPUT` (default `stderr`)
+
+Set this to `stderr` or `stdout` and logs will be written to that stream.
+
 ### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 10)
 
 The number of messages with the same "signature" (message format with digits removed) allowed in one minute before being blocked by spam protection (see below). Set to `0` to disable the spam filter entirely.
