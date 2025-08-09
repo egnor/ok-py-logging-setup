@@ -21,7 +21,7 @@ _logger = logging.getLogger(__name__)  # very meta
 _handler = None
 
 
-def install(*, env_defaults: typing.Dict[str, str]={}):
+def install(env_defaults: typing.Dict[str, str]={}):
     """
     Sets up Python logging the ok_logging_setup way. Must be called without
     any other logging handlers added. See README.md for full documentation.
