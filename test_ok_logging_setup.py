@@ -9,15 +9,16 @@ import subprocess
 import textwrap
 
 
-def get_stderr(*args, **kw):
-    kw = { "check": True, "stderr": subprocess.PIPE, "text": True, **kw }
+def run_try(*args, **kw):
+    PIPE = subprocess.PIPE
+    kw = { "stdout": PIPE, "stderr": PIPE, "text": True, "check": 1, **kw }
     args = [pathlib.Path(__file__).parent / "try_ok_logging_setup.py", *args]
-    return subprocess.run(args, **kw).stderr
+    return subprocess.run(args, **kw)
 
 
 def test_defaults():
     # Note, [Task Name] isn't supported in python 3.9
-    assert get_stderr() == textwrap.dedent("""\
+    assert run_try().stderr == textwrap.dedent("""\
         This is an info message
 
             ⚠️ This is a warning message with whitespace    
@@ -37,7 +38,7 @@ def test_defaults():
 
 
 def test_keyboard_interrupt():
-    stderr = get_stderr("--keyboard-interrupt", check=False)
+    stderr = run_try("--keyboard-interrupt", check=0).stderr
     assert stderr == textwrap.dedent("""\
 
         ❌ KeyboardInterrupt (^C)! ❌
@@ -46,7 +47,7 @@ def test_keyboard_interrupt():
 
 
 def test_logging_exit():
-    stderr = get_stderr("--ok-logging-exit", check=False)
+    stderr = run_try("--ok-logging-exit", check=0).stderr
     assert stderr == textwrap.dedent("""\
         💥 This is a program exit message
         This is an info message in an atexit hook
@@ -54,7 +55,7 @@ def test_logging_exit():
 
 
 def test_uncaught_exception():
-    stderr = get_stderr("--uncaught-exception", check=False)
+    stderr = run_try("--uncaught-exception", check=0).stderr
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 Uncaught exception
         Traceback (most recent call last):
@@ -68,7 +69,7 @@ def test_uncaught_exception():
 
 
 def test_uncaught_skip_traceback():
-    stderr = get_stderr("--uncaught-skip-traceback", check=False)
+    stderr = run_try("--uncaught-skip-traceback", check=0).stderr
     assert stderr == textwrap.dedent("""\
         💥 Uncaught exception
         SkipTracebackException: This is an uncaught exception with traceback skipped
@@ -77,7 +78,7 @@ def test_uncaught_skip_traceback():
 
 
 def test_uncaught_thread_exception():
-    stderr = get_stderr("--uncaught-thread-exception", check=False)
+    stderr = run_try("--uncaught-thread-exception", check=0).stderr
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 <Thread Name> Uncaught exception in thread
         Traceback (most recent call last):
@@ -92,7 +93,7 @@ def test_uncaught_thread_exception():
 
 
 def test_unraisable_exception():
-    stderr = get_stderr("--unraisable-exception", check=False)
+    stderr = run_try("--unraisable-exception", check=0).stderr
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent("""\
         💥 Uncatchable exception
         Traceback (most recent call last):
@@ -102,9 +103,16 @@ def test_unraisable_exception():
     """)
 
 
+def test_env_output():
+    env = { **os.environ, "OK_LOGGING_OUTPUT": "stdout" }
+    result = run_try(env=env)
+    assert result.stderr == ""
+    assert result.stdout.startswith("This is an info message")
+
+
 def test_env_levels():
-    env = { "OK_LOGGING_LEVEL": "critical,foo=warn,bar=error,bar.bat=info" }
-    assert get_stderr(env={ **os.environ, **env }) == textwrap.dedent("""\
+    env = { **os.environ, "OK_LOGGING_LEVEL": "critical,foo=warn,bar.bat=info" }
+    assert run_try(env=env).stderr == textwrap.dedent("""\
         💥 This is a critical message
         🔥 foo: This is an error message for 'foo'
         bar.bat: This is an info message for 'bar.bat'
@@ -115,19 +123,20 @@ def test_env_levels():
 def test_env_time_format():
     av = ["--fake-time=1/1/2020 12:00Z"]
     env = {
+        **os.environ,
         "OK_LOGGING_LEVEL": "critical",  # less output
         "OK_LOGGING_TIME_FORMAT": "%H:%M",
         "OK_LOGGING_TIMEZONE": "America/New_York",
     }
-    assert get_stderr(*av, env={ **os.environ, **env }) == textwrap.dedent("""\
+    assert run_try(*av, env=env).stderr == textwrap.dedent("""\
         07:00 💥 This is a critical message
     """)
 
 
 def test_repeat_limit():
     av = ["--fake-time=1/1/2020", "--spam=25", "--spam-sleep=5"]
-    env = { "OK_LOGGING_TIME_FORMAT": "%Y-%m-%d %H:%M:%S" }
-    assert get_stderr(*av, env={ **os.environ, **env }) == textwrap.dedent("""\
+    env = { **os.environ, "OK_LOGGING_TIME_FORMAT": "%Y-%m-%d %H:%M:%S" }
+    assert run_try(*av, env=env).stderr == textwrap.dedent("""\
         2020-01-01 00:00:00 Spam message 1
         2020-01-01 00:00:05 Spam message 2
         2020-01-01 00:00:10 Spam message 3

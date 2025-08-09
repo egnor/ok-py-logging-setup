@@ -58,6 +58,14 @@ def exit(msg: str, *args, code: int=1, **kw):
 
 
 def _configure(env):
+    if stream := env.pop("OK_LOGGING_OUTPUT", ""):
+        if stream == "stdout":
+            _handler.setStream(sys.stdout)
+        elif stream == "stderr":
+            _handler.setStream(sys.stderr)
+        else:
+            _logger.warning(f'Bad $OK_LOGGING_OUTPUT "{stream}"')
+
     for env_level in env.pop("OK_LOGGING_LEVEL", "").split(","):
         if env_match := ENV_LEVEL_RE.fullmatch(env_level):
             module = env_match.group("module")
