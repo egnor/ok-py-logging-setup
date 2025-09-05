@@ -17,20 +17,6 @@ class SkipTracebackException(Exception):
 
 ok_logging_setup.skip_traceback_for(SkipTracebackException)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--fake-time")
-parser.add_argument("--spam", type=int, default=0)
-parser.add_argument("--spam-sleep", type=float, default=0)
-fatal_args = parser.add_mutually_exclusive_group()
-fatal_args.add_argument("--keyboard-interrupt", action="store_true")
-fatal_args.add_argument("--ok-logging-exit", action="store_true")
-fatal_args.add_argument("--sys-exit", action="store_true")
-fatal_args.add_argument("--uncaught-exception", action="store_true")
-fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
-fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
-fatal_args.add_argument("--unraisable-exception", action="store_true")
-args = parser.parse_args()
-
 
 def atexit_hook():
     logging.info("This is an info message in an atexit hook")
@@ -50,9 +36,13 @@ def thread_exception():
     raise Exception("This is an uncaught thread exception")
 
 
-def main():
+def main(args):
     # Register atexit to verify
     atexit.register(atexit_hook)
+
+    # If requested, set up different logging first
+    if args.logging_conflict:
+        logging.basicConfig()
 
     # Setup logging
     ok_logging_setup.install()
@@ -131,4 +121,25 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fake-time")
+    parser.add_argument("--install-in-thread", action="store_true")
+    parser.add_argument("--spam", type=int, default=0)
+    parser.add_argument("--spam-sleep", type=float, default=0)
+    fatal_args = parser.add_mutually_exclusive_group()
+    fatal_args.add_argument("--keyboard-interrupt", action="store_true")
+    fatal_args.add_argument("--logging-conflict", action="store_true")
+    fatal_args.add_argument("--ok-logging-exit", action="store_true")
+    fatal_args.add_argument("--sys-exit", action="store_true")
+    fatal_args.add_argument("--uncaught-exception", action="store_true")
+    fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
+    fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
+    fatal_args.add_argument("--unraisable-exception", action="store_true")
+    args = parser.parse_args()
+
+    if args.install_in_thread:
+        run = threading.Thread(name="Install Thread", target=main, args=(args,))
+        run.start()
+        run.join()
+    else:
+        main(args)

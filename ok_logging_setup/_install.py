@@ -30,22 +30,23 @@ def install(env_defaults: typing.Dict[str, str]={}):
     """
 
     global _handler
-    if not logging.root.handlers:
-        signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling
-        _handler = logging.StreamHandler(stream=sys.stderr)
-        _handler.setFormatter(ok_logging_setup._formatter.LogFormatter())
-        _handler.addFilter(ok_logging_setup._filter.LogFilter())
-        logging.basicConfig(level=logging.INFO, handlers=[_handler])
-        sys.excepthook = _sys_exception_hook
-        sys.unraisablehook = _sys_unraisable_hook
-        threading.excepthook = _thread_exception_hook
-        if isinstance(sys.stdout, io.TextIOWrapper):
-            sys.stdout.reconfigure(line_buffering=True)  # print immediately
-    elif logging.root.handlers[0] is not _handler:
+    if logging.root.handlers:
+        if logging.root.handlers[0] is _handler: return
         raise RuntimeError("ok_logging_setup.install() with logging configured")
 
-    _configure({**env_defaults, **os.environ})
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGINT, signal.SIG_DFL)  # sane ^C handling
 
+    _handler = logging.StreamHandler(stream=sys.stderr)
+    _handler.setFormatter(ok_logging_setup._formatter.LogFormatter())
+    _handler.addFilter(ok_logging_setup._filter.LogFilter())
+    logging.basicConfig(level=logging.INFO, handlers=[_handler])
+    sys.excepthook = _sys_exception_hook
+    sys.unraisablehook = _sys_unraisable_hook
+    threading.excepthook = _thread_exception_hook
+    if isinstance(sys.stdout, io.TextIOWrapper):
+        sys.stdout.reconfigure(line_buffering=True)  # print immediately
+    _configure({**env_defaults, **os.environ})
 
 def exit(msg: str, *args, code: int=1, **kw):
     """

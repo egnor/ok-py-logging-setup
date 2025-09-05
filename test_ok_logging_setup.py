@@ -37,6 +37,26 @@ def test_defaults():
     """)
 
 
+def test_install_in_thread():
+    assert run_try("--install-in-thread").stderr == textwrap.dedent("""\
+        <Install Thread> This is an info message
+
+            ⚠️ <Install Thread> This is a warning message with whitespace    
+
+        🔥 <Install Thread> 😎 This is an error message with custom emoji
+        💥 <Install Thread> This is a critical message
+        foo: <Install Thread> This is an info message for 'foo'
+        🔥 foo: <Install Thread> This is an error message for 'foo'
+        bar.bat: <Install Thread> This is an info message for 'bar.bat'
+        🔥 bar.bat: <Install Thread> This is an error message for 'bar.bat'
+        <Install Thread> This is an info message in a task
+        🔥 <Install Thread> This is an error message in a task
+        <Thread Name> This is an info message in a thread
+        🔥 <Thread Name> This is an error message in a thread
+        This is an info message in an atexit hook
+    """)
+
+
 def test_keyboard_interrupt():
     stderr = run_try("--keyboard-interrupt", check=0).stderr
     assert stderr == textwrap.dedent("""\
@@ -60,7 +80,7 @@ def test_uncaught_exception():
         💥 Uncaught exception
         Traceback (most recent call last):
           File XXX, in <module>
-            main()
+            main(args)
           File XXX, in main
             raise Exception("This is an uncaught exception")
         Exception: This is an uncaught exception
