@@ -7,4 +7,4 @@ experimental = true
 python.uv_venv_auto = true
 
 [hooks]
-postinstall = "uv pip install -e '.[dev]'"
+postinstall = "uv sync"
