@@ -26,7 +26,12 @@ class LogFilter(logging.Filter):
         if repeat_per_minute <= 0:
             return True  # suppression disabled
 
-        sig = LogFilter.DIGITS.sub("#", str(record.msg))
+        sig = tuple(
+            LogFilter.DIGITS.sub("#", s)
+            for s in [record.msg, *record.args]
+            if isinstance(s, str)
+        ) or LogFilter.DIGITS.sub("#", record.getMessage())
+
         count = self._recently_seen.get(sig, 0)
         if count < 0:
             return False  # already suppressed
