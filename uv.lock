@@ -94,28 +94,24 @@ wheels = [
 
 [[package]]
 name = "ok-logging-setup"
-version = "0.8"
+version = "0.9"
 source = { editable = "." }
-dependencies = [
-    { name = "mypy" },
-    { name = "ruff" },
-]
 
 [package.dev-dependencies]
 dev = [
+    { name = "mypy" },
     { name = "pytest" },
+    { name = "ruff" },
     { name = "time-machine" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "mypy", specifier = ">=1.16.1" },
-    { name = "ruff", specifier = ">=0.12.0" },
-]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mypy" },
     { name = "pytest" },
+    { name = "ruff" },
     { name = "time-machine" },
 ]
 
