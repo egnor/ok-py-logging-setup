@@ -46,9 +46,9 @@ The `ok_logging_setup.install()` call does the following:
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
 Advanced usage:
-- pass a string-string dict to `ok_logging_setup.install({ ... })` to set configuration defaults (see below)
-- call `ok_logging_setup.exit(msg, ...)` to log a `.critical(msg, ...)` error and immediately `sys.exit(1)`
-- call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stacks for that unhandled exception
+- pass a string-string dict to `ok_logging_setup.install({ ... })` to set defaults (see below)
+- call `ok_logging_setup.exit(msg, ...)` to log a `.critical(msg, ...)` and immediately `sys.exit(1)`
+- call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stacks for that exception
 
 After installation, use `.info`, `.error`, etc as normal on the `logger` module itself, or if you're fancy, use per-subsystem `Logger` objects to log messages for selective filtering (see `$OK_LOGGING_LEVEL` below).
 
