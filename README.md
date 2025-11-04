@@ -1,6 +1,6 @@
 # ok-logging-setup for Python
 
-Simple, opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var configuration, logspam limiting and minimalist formatting.
+Basic, opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var config, logspam limiting and minimalist formatting.
 
 You probably won't want to use this. You should consider these libraries instead:
 - [structlog](https://www.structlog.org/) - fancy logging system with interconnects to Python logging
