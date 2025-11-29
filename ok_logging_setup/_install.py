@@ -49,6 +49,7 @@ def install(env_defaults: typing.Dict[str, str]={}):
         sys.stdout.reconfigure(line_buffering=True)  # print immediately
     _configure({**env_defaults, **os.environ})
 
+
 def exit(msg: str, *args, code: int=1, **kw):
     """
     Log a critical error (no stack) with the root logger, then exit the process.
