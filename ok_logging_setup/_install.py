@@ -31,7 +31,8 @@ def install(env_defaults: typing.Dict[str, str]={}):
 
     global _handler
     if logging.root.handlers:
-        if logging.root.handlers[0] is _handler: return
+        if logging.root.handlers[0] is _handler:
+            return
         raise RuntimeError("ok_logging_setup.install() with logging configured")
 
     if threading.current_thread() is threading.main_thread():

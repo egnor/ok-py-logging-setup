@@ -28,7 +28,7 @@ class LogFilter(logging.Filter):
 
         sig = tuple(
             LogFilter.DIGITS.sub("#", s)
-            for s in [record.msg, *record.args]
+            for s in [record.msg, *(record.args or [])]
             if isinstance(s, str)
         ) or LogFilter.DIGITS.sub("#", record.getMessage())
 
