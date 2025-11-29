@@ -20,5 +20,4 @@ exclude_gitignore = true
 files = "."
 
 [tool.uv.build-backend]
-module-name = "ok_logging_setup"
 module-root = ""
