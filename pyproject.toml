@@ -8,12 +8,12 @@ urls.Homepage = "https://github.com/egnor/ok-py-logging-setup#readme"
 urls.Repository = "https://github.com/egnor/ok-py-logging-setup.git"
 version = "0.10"
 
-[dependency-groups]
-dev = ["mypy", "pytest", "ruff", "time-machine"]
-
 [build-system]
 requires = ["uv_build>=0.9.13,<0.10.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["mypy", "pytest", "ruff", "time-machine"]
 
 [tool.mypy]
 exclude_gitignore = true
