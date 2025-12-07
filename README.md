@@ -79,7 +79,7 @@ The number of messages with the same "signature" (format and string args, with d
 
 ## Spam protection
 
-If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate spam, `ok_logging_setup.install` adds a filter that checks if a log message with the same "signature" (format string with digits removed) more than N times in a one minute period, subsequent instances of that same "signature" are dropped until the minute rolls over. It looks like this:
+If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate spam, `ok_logging_setup.install` adds a filter that checks if a non-DEBUG log message with the same "signature" (format string with digits removed) more than N times in a one minute period, subsequent instances of that same "signature" are dropped until the minute rolls over. It looks like this:
 
 ```
 12:34:00 Spam message 1
@@ -110,6 +110,8 @@ If logs get emitted in a tight loop somehow, it can slow code down, fill up disk
 ```
 
 The "suppressing until ..." messages are appended so you know when log messages are potentially skipped. Spam filtering can be tuned by setting `$OK_LOGGING_REPEAT_PER_MINUTE` to the maximum number of messages with the same signature to allow per minute, or `0` to disable the filter entirely.
+
+Spam filtering is always bypassed for `DEBUG`-level messages and messages with a truthy `"repeat_ok"` in  extras.
 
 ## Log format
 
