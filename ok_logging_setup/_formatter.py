@@ -26,7 +26,7 @@ class LogFormatter(logging.Formatter):
             out = f"[{getattr(rec, 'taskName')}] {out}"
         if rec.name != "root":
             out = f"{rec.name}: {out}"
-        if rec.levelno < logging.INFO:
+        if rec.levelno <= logging.DEBUG:
             out = f"🕸  {out}"  # skip _starts_with_emoji for performance?
         elif rec.levelno >= logging.CRITICAL:
             if not _starts_with_emoji(out):

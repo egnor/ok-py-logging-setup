@@ -18,13 +18,17 @@ class LogFilter(logging.Filter):
         self._recently_seen = {}
 
     def filter(self, record: logging.LogRecord):
+        if (
+            record.levelno <= logging.DEBUG
+            or repeat_per_minute <= 0
+            or getattr(record, "repeat_ok", False)
+        ):
+            return True  # suppression disabled
+
         minute = record.created // 60
         if minute != self._last_minute:
             self._recently_seen.clear()
             self._last_minute = minute
-
-        if repeat_per_minute <= 0:
-            return True  # suppression disabled
 
         sig = tuple(
             LogFilter.DIGITS.sub("#", s)

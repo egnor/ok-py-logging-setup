@@ -12,8 +12,10 @@ import time_machine
 
 """Exercise logging with ok_logging_setup. Used by test_ok_logging_setup.py"""
 
+
 class SkipTracebackException(Exception):
     pass
+
 
 ok_logging_setup.skip_traceback_for(SkipTracebackException)
 
@@ -80,16 +82,20 @@ def main(args):
         thread.join()
 
     if args.unraisable_exception:
+
         class DestructorRaises:
             def __del__(self):
                 raise Exception("This is an 'unraisable' exception")
+
         obj = DestructorRaises()
         del obj
 
     # Log spam test
     if args.spam:
         for i in range(args.spam):
-            logging.info(f"Spam message {i + 1}")
+            level = getattr(logging, args.spam_level.upper())
+            extra = {"repeat_ok": args.spam_repeat_ok}
+            logging.log(level, f"Spam message {i + 1}", extra=extra)
             if fake_time:
                 fake_time.shift(args.spam_sleep)
             else:
@@ -125,6 +131,8 @@ if __name__ == "__main__":
     parser.add_argument("--fake-time")
     parser.add_argument("--install-in-thread", action="store_true")
     parser.add_argument("--spam", type=int, default=0)
+    parser.add_argument("--spam-level", type=str, default="info")
+    parser.add_argument("--spam-repeat-ok", action="store_true")
     parser.add_argument("--spam-sleep", type=float, default=0)
     fatal_args = parser.add_mutually_exclusive_group()
     fatal_args.add_argument("--keyboard-interrupt", action="store_true")
