@@ -1,13 +1,12 @@
 [project]
-authors = [{ name = "Dan Egnor", email="egnor@ofb.net" }]
+authors = [{ name = "Dan Egnor", email = "egnor@ofb.net" }]
 description = "Simple minimalist Python logging defaults"
 name = "ok-logging-setup"
 readme = "README.md"
 requires-python = ">=3.10"
 urls.Homepage = "https://github.com/egnor/ok-py-logging-setup#readme"
 urls.Repository = "https://github.com/egnor/ok-py-logging-setup.git"
-version = "0.10"
-dependencies = []
+version = "0.11"
 
 [build-system]
 requires = ["uv_build>=0.9.13,<0.10.0"]
