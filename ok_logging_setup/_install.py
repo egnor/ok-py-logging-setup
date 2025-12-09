@@ -21,7 +21,7 @@ _logger = logging.getLogger(__name__)  # very meta
 _handler = None
 
 
-def install(env_defaults: typing.Dict[str, str]={}):
+def install(env_defaults: typing.Dict[str, str] = {}):
     """
     Sets up Python logging the ok_logging_setup way. Must be called without
     any other logging handlers added. See README.md for full documentation.
@@ -50,7 +50,7 @@ def install(env_defaults: typing.Dict[str, str]={}):
     _configure({**env_defaults, **os.environ})
 
 
-def exit(msg: str, *args, code: int=1, **kw):
+def exit(msg: str, *args, code: int = 1, **kw):
     """
     Log a critical error (no stack) with the root logger, then exit the process.
     Typically used as a convenient error-and-exit for CLI utilities.
