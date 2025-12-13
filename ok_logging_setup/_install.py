@@ -44,7 +44,7 @@ def install(env_defaults: typing.Dict[str, str] = {}):
     logging.basicConfig(level=logging.INFO, handlers=[_handler])
     sys.excepthook = _sys_exception_hook
     sys.unraisablehook = _sys_unraisable_hook
-    threading.excepthook = _thread_exception_hook
+    threading.excepthook = _threading_exception_hook
     if isinstance(sys.stdout, io.TextIOWrapper):
         sys.stdout.reconfigure(line_buffering=True)  # print immediately
     _configure({**env_defaults, **os.environ})
@@ -127,10 +127,10 @@ def _sys_unraisable_hook(unr):
     os._exit(1)  # pylint: disable=protected-access
 
 
-def _thread_exception_hook(args):
+def _threading_exception_hook(args):
     exc_info = (args.exc_type, args.exc_value, args.exc_traceback)
     logging.critical("Uncaught exception in thread", exc_info=exc_info)
 
-    # otehr threads would continue, instead exit the whole program by policy
+    # other threads would continue; instead, exit the whole program by policy
     # (this does unfortunately bypass atexit handlers)
     os._exit(1)  # pylint: disable=protected-access
