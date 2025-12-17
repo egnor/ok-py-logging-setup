@@ -1,5 +1,6 @@
 """Implementation of ok_logging_setup.install() (exposed by __init__.py)"""
 
+import asyncio
 import io
 import logging
 import os
@@ -50,6 +51,18 @@ def install(env_defaults: typing.Dict[str, str] = {}):
     _configure({**env_defaults, **os.environ})
 
 
+<<<<<<< HEAD
+=======
+def install_asyncio_handler():
+    """
+    Must be called in an asyncio event loop. Adds an exception handler to
+    the loop that logs the exception *and exits the process*.
+    """
+
+    asyncio.get_running_loop().set_exception_handler(_asyncio_exception_hook)
+
+
+>>>>>>> 8e032a4 (v11: asyncio)
 def exit(msg: str, *args, code: int = 1, **kw):
     """
     Log a critical error (no stack) with the root logger, then exit the process.
@@ -122,7 +135,7 @@ def _sys_unraisable_hook(unr):
         exc_info = (unr.exc_type, unr.exc_value, unr.exc_traceback)
         logging.critical("Uncatchable exception", exc_info=exc_info)
 
-    # the python runtime would continue, instead exit the program by policy
+    # the python runtime would continue; instead, exit the program by policy
     # (this does unfortunately bypass atexit handlers)
     os._exit(1)  # pylint: disable=protected-access
 
@@ -132,5 +145,22 @@ def _threading_exception_hook(args):
     logging.critical("Uncaught exception in thread", exc_info=exc_info)
 
     # other threads would continue; instead, exit the whole program by policy
+    # (this does unfortunately bypass atexit handlers)
+    os._exit(1)  # pylint: disable=protected-access
+
+
+def _asyncio_exception_hook(loop, context):
+    exc = context.get("exception")
+    tb = context.get("source_traceback")
+    logging.critical(
+        "Uncaught exception in asyncio event loop",
+        exc_info=(
+            type(exc) if exc else None,
+            exc,
+            tb or (exc.__traceback__ if exc else None),
+        ),
+    )
+
+    # the loop would continue; instead, exit the whole program by policy
     # (this does unfortunately bypass atexit handlers)
     os._exit(1)  # pylint: disable=protected-access

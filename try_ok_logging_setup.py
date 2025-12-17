@@ -24,9 +24,13 @@ def atexit_hook():
     logging.info("This is an info message in an atexit hook")
 
 
-async def task_function():
-    logging.info("This is an info message in a task")
-    logging.error("This is an error message in a task")
+async def async_function():
+    logging.info("This is an info message in an async task")
+    logging.error("This is an error message in an async task")
+
+
+def asyncio_loop_exception():
+    raise Exception("This is an uncaught asyncio event loop exception")
 
 
 def thread_function():
@@ -81,6 +85,12 @@ def main(args):
         thread.start()
         thread.join()
 
+    if args.uncaught_asyncio_exception:
+        async_loop = asyncio.events.new_event_loop()
+        async_loop.call_soon(ok_logging_setup.install_asyncio_handler)
+        async_loop.call_soon(asyncio_loop_exception)
+        async_loop.run_forever()
+
     if args.unraisable_exception:
 
         class DestructorRaises:
@@ -118,7 +128,7 @@ def main(args):
     barbat_logger.error("This is an error message for 'bar.bat'")
 
     async_loop = asyncio.events.new_event_loop()
-    async_task = async_loop.create_task(task_function(), name="Task Name")
+    async_task = async_loop.create_task(async_function(), name="Task Name")
     async_loop.run_until_complete(async_task)
 
     thread = threading.Thread(name="Thread Name", target=thread_function)
@@ -142,6 +152,7 @@ if __name__ == "__main__":
     fatal_args.add_argument("--uncaught-exception", action="store_true")
     fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
     fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
+    fatal_args.add_argument("--uncaught-asyncio-exception", action="store_true")
     fatal_args.add_argument("--unraisable-exception", action="store_true")
     args = parser.parse_args()
 

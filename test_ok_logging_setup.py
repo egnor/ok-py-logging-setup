@@ -30,8 +30,8 @@ def test_defaults():
         🔥 foo: This is an error message for 'foo'
         bar.bat: This is an info message for 'bar.bat'
         🔥 bar.bat: This is an error message for 'bar.bat'
-        This is an info message in a task
-        🔥 This is an error message in a task
+        This is an info message in an async task
+        🔥 This is an error message in an async task
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
         This is an info message in an atexit hook
@@ -52,8 +52,8 @@ def test_install_in_thread():
         🔥 foo: <Install Thread> This is an error message for 'foo'
         bar.bat: <Install Thread> This is an info message for 'bar.bat'
         🔥 bar.bat: <Install Thread> This is an error message for 'bar.bat'
-        <Install Thread> This is an info message in a task
-        🔥 <Install Thread> This is an error message in a task
+        <Install Thread> This is an info message in an async task
+        🔥 <Install Thread> This is an error message in an async task
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
         This is an info message in an atexit hook
@@ -122,6 +122,21 @@ def test_uncaught_thread_exception():
           File XXX, in thread_exception
             raise Exception("This is an uncaught thread exception")
         Exception: This is an uncaught thread exception
+    """
+    )
+
+
+def test_uncaught_asyncio_exception():
+    stderr = run_try("--uncaught-asyncio-exception", check=0).stderr
+    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
+        """\
+        💥 Uncaught exception in asyncio event loop
+        Traceback (most recent call last):
+          File XXX, in _run
+            self._context.run(self._callback, *self._args)
+          File XXX, in asyncio_loop_exception
+            raise Exception("This is an uncaught asyncio event loop exception")
+        Exception: This is an uncaught asyncio event loop exception
     """
     )
 
