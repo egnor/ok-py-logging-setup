@@ -1,8 +1,11 @@
+<!-- markdownlint-disable MD013 -->
+
 # ok-logging-setup for Python
 
 Basic, opinionated [Python logging](https://docs.python.org/3/library/logging.html) setup with env-var config, logspam limiting and minimalist formatting.
 
 You probably won't want to use this. You should consider these libraries instead:
+
 - [structlog](https://www.structlog.org/) - fancy logging system with interconnects to Python logging
 - [Rich](https://github.com/Textualize/rich#readme) - pretty text formatter, includes a logging prettifier
 - [Pretty Pie Log](https://github.com/chanpreet3000/pretty-pie-log) - logging prettifier
@@ -22,10 +25,12 @@ Also, most logging formatters spend too much real estate on log levels, source l
 ## Usage
 
 Add this package as a dependency:
+
 - `pip install ok-logging-setup`
 - OR just copy the `ok_logging_setup/` dir (it has no dependencies)
 
 Import the module and call `ok_logging_setup.install()` near program start:
+
 ```python
 import ok_logging_setup
 ...
@@ -35,6 +40,7 @@ def main():
 ```
 
 The `ok_logging_setup.install()` call does the following:
+
 - makes a root stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig), with log level INFO to start
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
@@ -45,10 +51,12 @@ The `ok_logging_setup.install()` call does the following:
 - changes `sys.stdout` to line buffered, so `print` and logs interleave correctly
 - resets control-C handling (`SIGINT`) to insta-kill (`SIG_DFL`), not Python's `InterruptException` nonsense
 
-Advanced usage:
+Extra goodies:
+
 - pass a string-string dict to `ok_logging_setup.install({ ... })` to set defaults (see below)
 - call `ok_logging_setup.exit(msg, ...)` to log a `.critical(msg, ...)` and immediately `sys.exit(1)`
 - call `ok_logging_setup.skip_traceback_for(SomeClass)` to not print stacks for that exception
+- call `ok_logging_setup.install_asyncio_handler()` in an event loop to log uncaught exceptions *and exit*
 
 After installation, use `.info`, `.error`, etc as normal on the `logger` module itself, or if you're fancy, use per-subsystem `Logger` objects to log messages for selective filtering (see `$OK_LOGGING_LEVEL` below).
 
@@ -116,6 +124,7 @@ Spam filtering is always bypassed for `DEBUG`-level messages and messages with a
 ## Log format
 
 By default, log messages include a severity icon (emoji) and the message:
+
 ```
 🕸 This is a debug message
 This is an INFO message
@@ -127,17 +136,20 @@ This is an INFO message
 (If the message already starts with an emoji, no emoji prefix is added; your emoji is assumed to convey appropriate importance.)
 
 If the message is logged with a named `Logger` object, the name is added as a prefix:
+
 ```
 🔥 foo: This is an error message reported with a Logger named "foo"
 ```
 
 If the message is logged from a named thread or a named asyncio task, the name is included
+
 ```
 🔥 <Thread Name> This is an error message in a thread
 🔥 [Task Name] This is an error message in a task
 ```
 
 If you want timestamps, set `$OK_LOGGING_TIME_FORMAT` (see above):
+
 ```bash
 $ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
 ...
@@ -145,6 +157,7 @@ $ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
 ```
 
 Exceptions are formatted in the normal way:
+
 ```
 💥 Uncaught exception
 Traceback (most recent call last):
