@@ -51,8 +51,6 @@ def install(env_defaults: typing.Dict[str, str] = {}):
     _configure({**env_defaults, **os.environ})
 
 
-<<<<<<< HEAD
-=======
 def install_asyncio_handler():
     """
     Must be called in an asyncio event loop. Adds an exception handler to
@@ -62,7 +60,6 @@ def install_asyncio_handler():
     asyncio.get_running_loop().set_exception_handler(_asyncio_exception_hook)
 
 
->>>>>>> 8e032a4 (v11: asyncio)
 def exit(msg: str, *args, code: int = 1, **kw):
     """
     Log a critical error (no stack) with the root logger, then exit the process.
