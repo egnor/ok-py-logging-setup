@@ -62,7 +62,7 @@ def install_asyncio_handler():
 
 def exit(msg: str, *args, code: int = 1, **kw):
     """
-    Log a critical error (no stack) with the root logger, then exit the process.
+    Logs a critical error (no stack) at the root logger, then exits the process.
     Typically used as a convenient error-and-exit for CLI utilities.
     """
 

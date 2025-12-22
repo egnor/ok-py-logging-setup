@@ -55,7 +55,7 @@ class LogFormatter(logging.Formatter):
 
 def skip_traceback_for(klass: typing.Type[BaseException]):
     """
-    Add to the list of exception classes where tracebacks are suppressed
+    Adds an exception class to the list where stack tracebacks are skipped
     in regular logging or when handling uncaught exceptions. Good for
     exceptions with self-evident causes where stack traces are noise.
     """
