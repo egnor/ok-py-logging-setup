@@ -20,14 +20,14 @@ Python's `logging` module is usable enough but (over)complicated with a tree of 
 
 Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. I just need an environment variable to dial verbosity up and down for the app or subsystems I'm debugging. That's what this library offers.
 
-Also, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions.)
+Finally, most logging formatters spend too much real estate on log levels, source locations, full timestamps, and other metadata. This library adds a minimalist formatter that skips most of that (see below). You can always search the code to find a message's origin! (Stack traces are still printed for exceptions.)
 
 ## Usage
 
 Add this package as a dependency:
 
 - `pip install ok-logging-setup`
-- OR just copy the `ok_logging_setup/` dir (it has no dependencies)
+- OR copy `ok_logging_setup/` (it has no dependencies)
 
 Import the module and call `ok_logging_setup.install()` near program start:
 
@@ -39,9 +39,9 @@ def main():
     ... run your app ...
 ```
 
-The `ok_logging_setup.install()` call does the following:
+The call to `ok_logging_setup.install()` does the following:
 
-- makes a root stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig), with log level INFO to start
+- makes a root stderr logger via [`logging.basicConfig`](https://docs.python.org/3/library/logging.html#logging.basicConfig)
 - interprets `$OK_LOGGING_*` environment variables (described below)
 - adds a formatter with minimal, legible output (described below)
 - adds a filter with simple logspam-protection (described below)
