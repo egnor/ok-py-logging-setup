@@ -16,7 +16,7 @@ You probably won't want to use this. You should consider these libraries instead
 
 ## Opinion-ifesto
 
-Python's `logging` module is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters, plus similarly (over)complicated [external configuration](https://docs.python.org/latest/library/logging.config.html) using ini-files and/or a custom socket protocol (!) to customize that whole mess.
+Python's `logging` module is usable enough but (over)complicated with a tree of loggers with attached handlers, formatters, and filters, plus similarly (over)complicated [external configuration](https://docs.python.org/3/library/logging.config.html) using ini-files and/or a custom socket protocol (!) to customize that whole mess.
 
 Modern [12-factor-ish apps](https://12factor.net/) don't want most of this. Logging should just go to stderr in some reasonable format; the app runner (Docker, systemd, etc) takes it from there. I just need an environment variable to dial verbosity up and down for the app or subsystems I'm debugging. That's what this library offers.
 
