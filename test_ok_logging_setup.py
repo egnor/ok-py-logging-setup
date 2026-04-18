@@ -154,13 +154,6 @@ def test_unraisable_exception():
     )
 
 
-def test_env_output():
-    env = {**os.environ, "OK_LOGGING_OUTPUT": "stdout"}
-    result = run_try(env=env)
-    assert result.stderr == ""
-    assert result.stdout.startswith("This is an info message")
-
-
 def test_env_levels():
     env = {**os.environ, "OK_LOGGING_LEVEL": "critical,foo=warn,bar.bat=info"}
     assert run_try(env=env).stderr == textwrap.dedent(
@@ -171,6 +164,36 @@ def test_env_levels():
         🔥 bar.bat: This is an error message for 'bar.bat'
     """
     )
+
+
+def test_env_prefix():
+    env = {**os.environ, "OK_LOGGING_PREFIX": "[MyApp] "}
+    assert run_try(env=env).stderr == textwrap.dedent(
+        """\
+        [MyApp] This is an info message
+
+            [MyApp] ⚠️ This is a warning message with whitespace    
+
+        [MyApp] 😎 This is an error message with custom emoji
+        [MyApp] 💥 This is a critical message
+        [MyApp] foo: This is an info message for 'foo'
+        [MyApp] 🔥 foo: This is an error message for 'foo'
+        [MyApp] bar.bat: This is an info message for 'bar.bat'
+        [MyApp] 🔥 bar.bat: This is an error message for 'bar.bat'
+        [MyApp] This is an info message in an async task
+        [MyApp] 🔥 This is an error message in an async task
+        [MyApp] <Thread Name> This is an info message in a thread
+        [MyApp] 🔥 <Thread Name> This is an error message in a thread
+        [MyApp] This is an info message in an atexit hook
+        """
+    )
+
+
+def test_env_output():
+    env = {**os.environ, "OK_LOGGING_OUTPUT": "stdout"}
+    result = run_try(env=env)
+    assert result.stderr == ""
+    assert result.stdout.startswith("This is an info message")
 
 
 def test_env_time_format():

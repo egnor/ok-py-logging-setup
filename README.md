@@ -89,7 +89,7 @@ The number of messages with the same "signature" (format and string args, with d
 
 If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate spam, `ok_logging_setup.install` adds a filter that checks if a non-DEBUG log message with the same "signature" (format string with digits removed) more than N times in a one minute period, subsequent instances of that same "signature" are dropped until the minute rolls over. It looks like this:
 
-```
+```text
 12:34:00 Spam message 1
 12:34:01 Spam message 2
 12:34:02 Spam message 3
@@ -125,7 +125,7 @@ Spam filtering is always bypassed for `DEBUG`-level messages and messages with a
 
 By default, log messages include a severity icon (emoji) and the message:
 
-```
+```text
 🕸 This is a debug message
 This is an INFO message
 ⚠️ This is a WARNING message    
@@ -137,13 +137,13 @@ This is an INFO message
 
 If the message is logged with a named `Logger` object, the name is added as a prefix:
 
-```
+```text
 🔥 foo: This is an error message reported with a Logger named "foo"
 ```
 
 If the message is logged from a named thread or a named asyncio task, the name is included
 
-```
+```text
 🔥 <Thread Name> This is an error message in a thread
 🔥 [Task Name] This is an error message in a task
 ```
@@ -158,7 +158,7 @@ $ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
 
 Exceptions are formatted in the normal way:
 
-```
+```text
 💥 Uncaught exception
 Traceback (most recent call last):
   File "/home/egnor/source/ok-py-logging-setup/try_ok_logging_setup.py", line 109, in <module>

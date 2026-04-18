@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 urls.Homepage = "https://github.com/egnor/ok-py-logging-setup#readme"
 urls.Repository = "https://github.com/egnor/ok-py-logging-setup.git"
-version = "0.12"
+version = "0.13"
 dependencies = []
 
 [build-system]

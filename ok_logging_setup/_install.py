@@ -71,14 +71,6 @@ def exit(msg: str, *args, code: int = 1, **kw):
 
 
 def _configure(env):
-    if stream := env.pop("OK_LOGGING_OUTPUT", ""):
-        if stream == "stdout":
-            _handler.setStream(sys.stdout)
-        elif stream == "stderr":
-            _handler.setStream(sys.stderr)
-        else:
-            _logger.warning(f'Bad $OK_LOGGING_OUTPUT "{stream}"')
-
     for env_level in env.pop("OK_LOGGING_LEVEL", "").split(","):
         if env_match := ENV_LEVEL_RE.fullmatch(env_level):
             module = env_match.group("module")
@@ -90,6 +82,17 @@ def _configure(env):
                 _logger.warning(f'Bad $OK_LOGGING_LEVEL level "{level}"')
         elif env_level.strip():
             _logger.warning(f'Bad $OK_LOGGING_LEVEL entry "{env_level}"')
+
+    if env_output := env.pop("OK_LOGGING_OUTPUT", ""):
+        if env_output == "stdout":
+            _handler.setStream(sys.stdout)
+        elif env_output == "stderr":
+            _handler.setStream(sys.stderr)
+        else:
+            _logger.warning(f'Bad $OK_LOGGING_OUTPUT "{env_output}"')
+
+    if env_prefix := env.pop("OK_LOGGING_PREFIX", ""):
+        ok_logging_setup._formatter.log_prefix = env_prefix
 
     if env_repeat := env.pop("OK_LOGGING_REPEAT_PER_MINUTE", ""):
         try:

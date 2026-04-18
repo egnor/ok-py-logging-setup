@@ -10,6 +10,7 @@ TASK_IGNORE_RE = re.compile(r"(|Task-\d+)")
 THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
 
 skip_traceback_types: tuple[typing.Type[BaseException], ...] = ()
+log_prefix = ""
 log_time_format = ""
 log_timezone = None
 
@@ -19,7 +20,7 @@ class LogFormatter(logging.Formatter):
         m = rec.getMessage()
         ml = m.lstrip()
         out = ml.rstrip()
-        pre, post = m[: len(m) - len(ml)], ml[len(out) :]
+        pre_space, post_space = m[: len(m) - len(ml)], ml[len(out) :]
         if not THREAD_IGNORE_RE.fullmatch(rec.threadName or ""):
             out = f"<{rec.threadName}> {out}"
         if not TASK_IGNORE_RE.fullmatch(getattr(rec, "taskName", "") or ""):
@@ -50,7 +51,7 @@ class LogFormatter(logging.Formatter):
             out = f"{out.rstrip()}\n{self.formatException(exc)}"
         if stack:
             out = f"{out.rstrip()}\nStack:\n{stack}"
-        return pre + out.strip() + post
+        return pre_space + log_prefix + out.strip() + post_space
 
 
 def skip_traceback_for(klass: typing.Type[BaseException]):
