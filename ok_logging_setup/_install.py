@@ -54,7 +54,7 @@ def install(env_defaults: typing.Dict[str, str] = {}):
 def install_asyncio_handler():
     """
     Must be called in an asyncio event loop. Adds an exception handler to
-    the loop that logs the exception *and exits the process*.
+    the loop that logs any unhandled exception *and exits the process*.
     """
 
     asyncio.get_running_loop().set_exception_handler(_asyncio_exception_hook)
