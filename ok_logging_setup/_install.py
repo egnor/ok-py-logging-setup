@@ -100,6 +100,10 @@ def _configure(env):
         except ValueError:
             _logger.warning(f'Bad $OK_LOGGING_REPEAT_PER_MINUTE "{env_repeat}"')
 
+    if env_terminator := env.pop("OK_LOGGING_TERMINATOR", ""):
+        ok_logging_setup._formatter.log_terminator = env_terminator
+        _handler.terminator = env_terminator
+
     if env_time_format := env.pop("OK_LOGGING_TIME_FORMAT", ""):
         ok_logging_setup._formatter.log_time_format = env_time_format
         if env_timezone := env.pop("OK_LOGGING_TIMEZONE", ""):

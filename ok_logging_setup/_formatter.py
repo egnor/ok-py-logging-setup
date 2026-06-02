@@ -11,6 +11,7 @@ THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
 
 skip_traceback_types: tuple[typing.Type[BaseException], ...] = ()
 log_prefix = ""
+log_terminator = "\n"
 log_time_format = ""
 log_timezone = None
 
@@ -51,7 +52,11 @@ class LogFormatter(logging.Formatter):
             out = f"{out.rstrip()}\n{self.formatException(exc)}"
         if stack:
             out = f"{out.rstrip()}\nStack:\n{stack}"
-        return pre_space + log_prefix + out.strip() + post_space
+
+        assembled = pre_space + log_prefix + out.strip() + post_space
+        if log_terminator != "\n":
+            assembled = assembled.replace("\n", log_terminator)
+        return assembled
 
 
 def skip_traceback_for(klass: typing.Type[BaseException]):

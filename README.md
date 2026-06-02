@@ -78,11 +78,15 @@ Set this to `stderr` or `stdout` and logs will be written to that stream.
 
 ### `$OK_LOGGING_PREFIX` (default empty)
 
-This string is prefixed to all log messages from this program.
+This string is printed before each log message.
 
 ### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 10)
 
 The number of messages with the same "signature" (format and string args, with digits removed) allowed in one minute before being blocked by spam protection (see below). Set to `0` to disable the spam filter entirely.
+
+### `$OK_LOGGING_TERMINATOR` (default `\n`)
+
+This string is printed after each log message to end the line.
 
 ### `$OK_LOGGING_TIME_FORMAT` and `$OK_LOGGING_TIMEZONE`
 

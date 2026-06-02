@@ -196,6 +196,29 @@ def test_env_output():
     assert result.stdout.startswith("This is an info message")
 
 
+def test_env_terminator():
+    env = {**os.environ, "OK_LOGGING_TERMINATOR": " [EOL]\n"}
+    assert run_try(env=env).stderr == textwrap.dedent(
+        """\
+        This is an info message [EOL]
+         [EOL]
+            ⚠️ This is a warning message with whitespace     [EOL]
+         [EOL]
+        😎 This is an error message with custom emoji [EOL]
+        💥 This is a critical message [EOL]
+        foo: This is an info message for 'foo' [EOL]
+        🔥 foo: This is an error message for 'foo' [EOL]
+        bar.bat: This is an info message for 'bar.bat' [EOL]
+        🔥 bar.bat: This is an error message for 'bar.bat' [EOL]
+        This is an info message in an async task [EOL]
+        🔥 This is an error message in an async task [EOL]
+        <Thread Name> This is an info message in a thread [EOL]
+        🔥 <Thread Name> This is an error message in a thread [EOL]
+        This is an info message in an atexit hook [EOL]
+        """
+    )
+
+
 def test_env_time_format():
     av = ["--fake-time=1/1/2020 12:00Z"]
     env = {
