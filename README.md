@@ -80,9 +80,13 @@ Set this to `stderr` or `stdout` and logs will be written to that stream.
 
 This string is printed before each log message.
 
-### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 10)
+### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 20)
 
-The number of messages with the same "signature" (format and string args, with digits removed) allowed in one minute before being blocked by spam protection (see below). Set to `0` to disable the spam filter entirely.
+Maximum messages per minute with the same "signature" (format and string args, with digits removed) allowed before rate limiting that message (see below).
+
+### `$OK_LOGGING_REPEAT_PER_SECOND` (default 1)
+
+Maximum messages per second with the same "signature" (as above) when rate limiting is active (see below).
 
 ### `$OK_LOGGING_TERMINATOR` (default `\n`)
 
@@ -93,9 +97,11 @@ This string is printed after each log message to end the line.
 - to timestamp log messages, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes)
 - if set, `$OK_LOGGING_TIMEZONE` ([from this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) is used for timestamps
 
-## Spam protection
+## Spam protection rate limiting
 
-If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate spam, `ok_logging_setup.install` adds a filter that checks if a non-DEBUG log message with the same "signature" (format string with digits removed) more than N times in a one minute period, subsequent instances of that same "signature" are dropped until the minute rolls over. It looks like this:
+If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate this, `ok_logging_setup.install` adds a filter that checks for frequent (default >20/minute) "similar" messages (not counting digits). Once that happens, the offending message is rate limited with a "cooldown" (default 1 sec).
+
+DEBUG messages are exempt; if they are enabled, you are assumed to want all the detail. Messages with `"repeat_ok"` in `extra` are also exempt.
 
 ```text
 12:34:00 Spam message 1

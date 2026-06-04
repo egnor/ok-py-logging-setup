@@ -1,12 +1,11 @@
 """LogFilter installed by ok_logging_setup.install()"""
 
-import datetime
+import collections
 import logging
 import re
 
-import ok_logging_setup._formatter
-
-repeat_per_minute = 10  # max per message 'signature' (format minus digits)
+repeat_burst = 20  # max per message 'signature' (format minus digits)
+repeat_delay = 1.0  # seconds per message when repeat_burst is hit
 
 
 class LogFilter(logging.Filter):
@@ -14,21 +13,18 @@ class LogFilter(logging.Filter):
 
     def __init__(self):
         super().__init__()
-        self._last_minute = 0
-        self._recently_seen = {}
+        self._allow_time: dict[tuple, float] = {}
+        self._allow_max = 0.0
+        self._prev_allow_time: dict[tuple, float] = {}
+        self._prev_allow_max = 0.0
 
     def filter(self, record: logging.LogRecord):
         if (
             record.levelno <= logging.DEBUG
-            or repeat_per_minute <= 0
+            or repeat_delay <= 0
             or getattr(record, "repeat_ok", False)
         ):
             return True  # suppression disabled
-
-        minute = record.created // 60
-        if minute != self._last_minute:
-            self._recently_seen.clear()
-            self._last_minute = minute
 
         sig = tuple(
             LogFilter.DIGITS.sub("#", s)
@@ -36,18 +32,25 @@ class LogFilter(logging.Filter):
             if isinstance(s, str)
         ) or LogFilter.DIGITS.sub("#", record.getMessage())
 
-        count = self._recently_seen.get(sig, 0)
-        if count < 0:
-            return False  # already suppressed
-        elif count < repeat_per_minute:
-            self._recently_seen[sig] = count + 1
-            return True
+        allow_time = self._allow_time.get(sig, 0.0)
+        if allow_time > record.created:
+            return False
+
+        min_allow_time = record.created - repeat_delay * repeat_burst
+        if self._prev_allow_max < min_allow_time:
+            self._prev_allow_time = self._allow_time
+            self._prev_allow_max = self._allow_max
+            self._allow_time = {}
+            self._allow_max = 0.0
         else:
-            self._recently_seen[sig] = -1  # suppressed until minute tick
-            until_sec = (minute + 1) * 60
-            until_tz = ok_logging_setup._formatter.log_timezone
-            until_dt = datetime.datetime.fromtimestamp(until_sec, until_tz)
-            old_message = record.getMessage()
-            record.msg = "%s [suppressing until %02d:%02d]"
-            record.args = (old_message, until_dt.hour, until_dt.minute)
-            return True
+            allow_time = max(allow_time, self._prev_allow_time.get(sig, 0.0))
+            if allow_time > record.created:
+                return False
+
+        new_allow_time = max(allow_time, min_allow_time) + repeat_delay
+        self._allow_time[sig] = new_allow_time
+        self._allow_max = max(self._allow_max, new_allow_time)
+        if new_allow_time > record.created:
+            record.msg = f"{record.msg} [⏱️ ]"
+
+        return True

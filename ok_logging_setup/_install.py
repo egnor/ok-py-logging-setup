@@ -94,11 +94,17 @@ def _configure(env):
     if env_prefix := env.pop("OK_LOGGING_PREFIX", ""):
         ok_logging_setup._formatter.log_prefix = env_prefix
 
-    if env_repeat := env.pop("OK_LOGGING_REPEAT_PER_MINUTE", ""):
+    if env_burst := env.pop("OK_LOGGING_REPEAT_BURST", ""):
         try:
-            ok_logging_setup._filter.repeat_per_minute = int(env_repeat)
+            ok_logging_setup._filter.repeat_burst = int(env_burst)
         except ValueError:
-            _logger.warning(f'Bad $OK_LOGGING_REPEAT_PER_MINUTE "{env_repeat}"')
+            _logger.warning(f'Bad $OK_LOGGING_REPEAT_BURST "{env_burst}"')
+
+    if env_delay := env.pop("OK_LOGGING_REPEAT_DELAY", ""):
+        try:
+            ok_logging_setup._filter.repeat_delay = float(env_delay)
+        except ValueError:
+            _logger.warning(f'Bad $OK_LOGGING_REPEAT_DELAY "{env_delay}"')
 
     if env_terminator := env.pop("OK_LOGGING_TERMINATOR", ""):
         ok_logging_setup._formatter.log_terminator = env_terminator

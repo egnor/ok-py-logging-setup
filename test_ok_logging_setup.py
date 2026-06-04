@@ -235,34 +235,36 @@ def test_env_time_format():
 
 
 def test_repeat_limit():
-    av = ["--fake-time=1/1/2020", "--spam=25", "--spam-sleep=5"]
-    env = {**os.environ, "OK_LOGGING_TIME_FORMAT": "%Y-%m-%d %H:%M:%S"}
+    av = ["--fake-time=1/1/2020", "--spam=30", "--spam-sleep=0.5"]
+    env = {**os.environ, "OK_LOGGING_TIME_FORMAT": "%H:%M:%S.%f"}
     assert run_try(*av, env=env).stderr == textwrap.dedent(
         """\
-        2020-01-01 00:00:00 Spam message 1
-        2020-01-01 00:00:05 Spam message 2
-        2020-01-01 00:00:10 Spam message 3
-        2020-01-01 00:00:15 Spam message 4
-        2020-01-01 00:00:20 Spam message 5
-        2020-01-01 00:00:25 Spam message 6
-        2020-01-01 00:00:30 Spam message 7
-        2020-01-01 00:00:35 Spam message 8
-        2020-01-01 00:00:40 Spam message 9
-        2020-01-01 00:00:45 Spam message 10
-        2020-01-01 00:00:50 Spam message 11 [suppressing until 00:01]
-        2020-01-01 00:01:00 Spam message 13
-        2020-01-01 00:01:05 Spam message 14
-        2020-01-01 00:01:10 Spam message 15
-        2020-01-01 00:01:15 Spam message 16
-        2020-01-01 00:01:20 Spam message 17
-        2020-01-01 00:01:25 Spam message 18
-        2020-01-01 00:01:30 Spam message 19
-        2020-01-01 00:01:35 Spam message 20
-        2020-01-01 00:01:40 Spam message 21
-        2020-01-01 00:01:45 Spam message 22
-        2020-01-01 00:01:50 Spam message 23 [suppressing until 00:02]
-        2020-01-01 00:02:00 Spam message 25
-        2020-01-01 00:02:05 This is an info message in an atexit hook
+        00:00:00.000000 Spam message 1
+        00:00:00.500000 Spam message 2
+        00:00:01.000000 Spam message 3
+        00:00:01.500000 Spam message 4
+        00:00:02.000000 Spam message 5
+        00:00:02.500000 Spam message 6
+        00:00:03.000000 Spam message 7
+        00:00:03.500000 Spam message 8
+        00:00:04.000000 Spam message 9
+        00:00:04.500000 Spam message 10
+        00:00:05.000000 Spam message 11
+        00:00:05.500000 Spam message 12
+        00:00:06.000000 Spam message 13
+        00:00:06.500000 Spam message 14
+        00:00:07.000000 Spam message 15
+        00:00:07.500000 Spam message 16
+        00:00:08.000000 Spam message 17
+        00:00:08.500000 Spam message 18
+        00:00:09.000000 Spam message 19
+        00:00:09.500000 Spam message 20 ⏸️ [rate limiting]
+        00:00:10.000000 Spam message 21 ⏸️ [rate limiting]
+        00:00:11.000000 Spam message 23 ⏸️ [rate limiting]
+        00:00:12.000000 Spam message 25 ⏸️ [rate limiting]
+        00:00:13.000000 Spam message 27 ⏸️ [rate limiting]
+        00:00:14.000000 Spam message 29 ⏸️ [rate limiting]
+        00:00:15.000000 This is an info message in an atexit hook
     """
     )
 
@@ -270,32 +272,37 @@ def test_repeat_limit():
     av_repeat_ok = [*av, "--spam-repeat-ok"]
     assert run_try(*av_repeat_ok, env=env).stderr == textwrap.dedent(
         """\
-        2020-01-01 00:00:00 Spam message 1
-        2020-01-01 00:00:05 Spam message 2
-        2020-01-01 00:00:10 Spam message 3
-        2020-01-01 00:00:15 Spam message 4
-        2020-01-01 00:00:20 Spam message 5
-        2020-01-01 00:00:25 Spam message 6
-        2020-01-01 00:00:30 Spam message 7
-        2020-01-01 00:00:35 Spam message 8
-        2020-01-01 00:00:40 Spam message 9
-        2020-01-01 00:00:45 Spam message 10
-        2020-01-01 00:00:50 Spam message 11
-        2020-01-01 00:00:55 Spam message 12
-        2020-01-01 00:01:00 Spam message 13
-        2020-01-01 00:01:05 Spam message 14
-        2020-01-01 00:01:10 Spam message 15
-        2020-01-01 00:01:15 Spam message 16
-        2020-01-01 00:01:20 Spam message 17
-        2020-01-01 00:01:25 Spam message 18
-        2020-01-01 00:01:30 Spam message 19
-        2020-01-01 00:01:35 Spam message 20
-        2020-01-01 00:01:40 Spam message 21
-        2020-01-01 00:01:45 Spam message 22
-        2020-01-01 00:01:50 Spam message 23
-        2020-01-01 00:01:55 Spam message 24
-        2020-01-01 00:02:00 Spam message 25
-        2020-01-01 00:02:05 This is an info message in an atexit hook
+        00:00:00.000000 Spam message 1
+        00:00:00.500000 Spam message 2
+        00:00:01.000000 Spam message 3
+        00:00:01.500000 Spam message 4
+        00:00:02.000000 Spam message 5
+        00:00:02.500000 Spam message 6
+        00:00:03.000000 Spam message 7
+        00:00:03.500000 Spam message 8
+        00:00:04.000000 Spam message 9
+        00:00:04.500000 Spam message 10
+        00:00:05.000000 Spam message 11
+        00:00:05.500000 Spam message 12
+        00:00:06.000000 Spam message 13
+        00:00:06.500000 Spam message 14
+        00:00:07.000000 Spam message 15
+        00:00:07.500000 Spam message 16
+        00:00:08.000000 Spam message 17
+        00:00:08.500000 Spam message 18
+        00:00:09.000000 Spam message 19
+        00:00:09.500000 Spam message 20
+        00:00:10.000000 Spam message 21
+        00:00:10.500000 Spam message 22
+        00:00:11.000000 Spam message 23
+        00:00:11.500000 Spam message 24
+        00:00:12.000000 Spam message 25
+        00:00:12.500000 Spam message 26
+        00:00:13.000000 Spam message 27
+        00:00:13.500000 Spam message 28
+        00:00:14.000000 Spam message 29
+        00:00:14.500000 Spam message 30
+        00:00:15.000000 This is an info message in an atexit hook
     """
     )
 
@@ -304,31 +311,36 @@ def test_repeat_limit():
     env_debug = {"OK_LOGGING_LEVEL": "debug", **env}
     assert run_try(*av_debug, env=env_debug).stderr == textwrap.dedent(
         """\
-        2020-01-01 00:00:00 🕸  Spam message 1
-        2020-01-01 00:00:05 🕸  Spam message 2
-        2020-01-01 00:00:10 🕸  Spam message 3
-        2020-01-01 00:00:15 🕸  Spam message 4
-        2020-01-01 00:00:20 🕸  Spam message 5
-        2020-01-01 00:00:25 🕸  Spam message 6
-        2020-01-01 00:00:30 🕸  Spam message 7
-        2020-01-01 00:00:35 🕸  Spam message 8
-        2020-01-01 00:00:40 🕸  Spam message 9
-        2020-01-01 00:00:45 🕸  Spam message 10
-        2020-01-01 00:00:50 🕸  Spam message 11
-        2020-01-01 00:00:55 🕸  Spam message 12
-        2020-01-01 00:01:00 🕸  Spam message 13
-        2020-01-01 00:01:05 🕸  Spam message 14
-        2020-01-01 00:01:10 🕸  Spam message 15
-        2020-01-01 00:01:15 🕸  Spam message 16
-        2020-01-01 00:01:20 🕸  Spam message 17
-        2020-01-01 00:01:25 🕸  Spam message 18
-        2020-01-01 00:01:30 🕸  Spam message 19
-        2020-01-01 00:01:35 🕸  Spam message 20
-        2020-01-01 00:01:40 🕸  Spam message 21
-        2020-01-01 00:01:45 🕸  Spam message 22
-        2020-01-01 00:01:50 🕸  Spam message 23
-        2020-01-01 00:01:55 🕸  Spam message 24
-        2020-01-01 00:02:00 🕸  Spam message 25
-        2020-01-01 00:02:05 This is an info message in an atexit hook
+        00:00:00.000000 🕸  Spam message 1
+        00:00:00.500000 🕸  Spam message 2
+        00:00:01.000000 🕸  Spam message 3
+        00:00:01.500000 🕸  Spam message 4
+        00:00:02.000000 🕸  Spam message 5
+        00:00:02.500000 🕸  Spam message 6
+        00:00:03.000000 🕸  Spam message 7
+        00:00:03.500000 🕸  Spam message 8
+        00:00:04.000000 🕸  Spam message 9
+        00:00:04.500000 🕸  Spam message 10
+        00:00:05.000000 🕸  Spam message 11
+        00:00:05.500000 🕸  Spam message 12
+        00:00:06.000000 🕸  Spam message 13
+        00:00:06.500000 🕸  Spam message 14
+        00:00:07.000000 🕸  Spam message 15
+        00:00:07.500000 🕸  Spam message 16
+        00:00:08.000000 🕸  Spam message 17
+        00:00:08.500000 🕸  Spam message 18
+        00:00:09.000000 🕸  Spam message 19
+        00:00:09.500000 🕸  Spam message 20
+        00:00:10.000000 🕸  Spam message 21
+        00:00:10.500000 🕸  Spam message 22
+        00:00:11.000000 🕸  Spam message 23
+        00:00:11.500000 🕸  Spam message 24
+        00:00:12.000000 🕸  Spam message 25
+        00:00:12.500000 🕸  Spam message 26
+        00:00:13.000000 🕸  Spam message 27
+        00:00:13.500000 🕸  Spam message 28
+        00:00:14.000000 🕸  Spam message 29
+        00:00:14.500000 🕸  Spam message 30
+        00:00:15.000000 This is an info message in an atexit hook
     """
     )
