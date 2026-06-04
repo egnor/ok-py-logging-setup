@@ -80,13 +80,13 @@ Set this to `stderr` or `stdout` and logs will be written to that stream.
 
 This string is printed before each log message.
 
-### `$OK_LOGGING_REPEAT_PER_MINUTE` (default 20)
+### `$OK_LOGGING_REPEAT_BURST` (default 20)
 
-Maximum messages per minute with the same "signature" (format and string args, with digits removed) allowed before rate limiting that message (see below).
+Maximum times a "similar" message can be repeated before rate limiting (see below).
 
-### `$OK_LOGGING_REPEAT_PER_SECOND` (default 1)
+### `$OK_LOGGING_REPEAT_DELAY` (default 1.0)
 
-Maximum messages per second with the same "signature" (as above) when rate limiting is active (see below).
+Minimum seconds between "similar" messages being rate limited (see below).
 
 ### `$OK_LOGGING_TERMINATOR` (default `\n`)
 
@@ -99,41 +99,49 @@ This string is printed after each log message to end the line.
 
 ## Spam protection rate limiting
 
-If logs get emitted in a tight loop somehow, it can slow code down, fill up disks, and generally make a bad day. To mitigate this, `ok_logging_setup.install` adds a filter that checks for frequent (default >20/minute) "similar" messages (not counting digits). Once that happens, the offending message is rate limited with a "cooldown" (default 1 sec).
+If a message gets emitted in a tight loop somehow, it can slow code down, fill up disks, bury other logs, and generally make a bad day. To mitigate this, `ok_logging_setup.install` adds a filter that checks for repeated "similar" messages (same text not counting digits). When that happens, the offending message is rate limited with a "cooldown".
 
-DEBUG messages are exempt; if they are enabled, you are assumed to want all the detail. Messages with `"repeat_ok"` in `extra` are also exempt.
+DEBUG messages are exempt as they are assumed to be noisy by design. Messages with `"repeat_ok"` in `extra` are also exempt.
+
+`$OK_LOGGING_REPEAT_BURST` and `$OK_LOGGING_REPEAT_DELAY` control the rate limiting. For example, with the defaults of `20` and `1.0`, after 20 similar messages in excess of 1/sec, further messages of that type are culled to no more than 1/sec with a `⏱️ [rate limiting]` marker.
 
 ```text
-12:34:00 Spam message 1
-12:34:01 Spam message 2
-12:34:02 Spam message 3
-12:34:03 Spam message 4
-12:34:04 Spam message 5
-12:34:05 Spam message 6
-12:34:06 Spam message 7
-12:34:07 Spam message 8
-12:34:08 Spam message 9
-12:34:09 Spam message 10
-12:34:10 Spam message 11 [suppressing until 12:35]
-12:35:00 Spam message 61
-12:35:01 Spam message 62
-12:35:02 Spam message 63
-12:35:03 Spam message 64
-12:35:04 Spam message 65
-12:35:05 Spam message 66
-12:35:06 Spam message 67
-12:35:07 Spam message 68
-12:35:08 Spam message 69
-12:35:09 Spam message 70
-12:35:10 Spam message 71 [suppressing until 12:36]
-12:36:00 Spam message 121
-12:36:01 Spam message 122
+% OK_LOGGING_TIME_FORMAT=%H:%M:%S.%f ./try_ok_logging_setup.py --spam=50 --spam-sleep=0.2 --fake-time 11:40
+11:40:00.000000 Spam message 1
+11:40:00.200000 Spam message 2
+11:40:00.400000 Spam message 3
+11:40:00.600000 Spam message 4
+11:40:00.800000 Spam message 5
+11:40:01.000000 Spam message 6
+11:40:01.200000 Spam message 7
+11:40:01.400000 Spam message 8
+11:40:01.600000 Spam message 9
+11:40:01.800000 Spam message 10
+11:40:02.000000 Spam message 11
+11:40:02.200000 Spam message 12
+11:40:02.400000 Spam message 13
+11:40:02.600000 Spam message 14
+11:40:02.800000 Spam message 15
+11:40:03.000000 Spam message 16
+11:40:03.200000 Spam message 17
+11:40:03.400000 Spam message 18
+11:40:03.600000 Spam message 19
+11:40:03.800000 Spam message 20
+11:40:04.000000 Spam message 21
+11:40:04.200000 Spam message 22
+11:40:04.400000 Spam message 23
+11:40:04.600000 Spam message 24 ⏱️ [rate limiting]
+11:40:05.000000 Spam message 26 ⏱️ [rate limiting]
+11:40:06.000000 Spam message 31 ⏱️ [rate limiting]
+11:40:07.000000 Spam message 36 ⏱️ [rate limiting]
+11:40:08.000000 Spam message 41 ⏱️ [rate limiting]
+11:40:09.000000 Spam message 46 ⏱️ [rate limiting]
 ...
 ```
 
-The "suppressing until ..." messages are appended so you know when log messages are potentially skipped. Spam filtering can be tuned by setting `$OK_LOGGING_REPEAT_PER_MINUTE` to the maximum number of messages with the same signature to allow per minute, or `0` to disable the filter entirely.
+In this case, filtering started at message 24 because 4 seconds had elapsed since the start of the burst, so there were 20 messages exceeding the 1/sec rate. Once the storm subsides, the burst quota can rebuild up to the maximum 20.
 
-Spam filtering is always bypassed for `DEBUG`-level messages and messages with a truthy `"repeat_ok"` in  extras.
+This filtering is per message; a different message would have its own burst and cooldown. This is determined by stripping digits from the message text, so `Spam message 1` and `Spam message 2` are considered similar, but `Spam message 1` and `Another message 1` are not.
 
 ## Log format
 

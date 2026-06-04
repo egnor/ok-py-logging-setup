@@ -19,7 +19,7 @@ Module split (all private except `__init__.py` re-exports):
 
 - `_install.py` — `install()`, env-var parsing, and exception hooks. The hooks (`sys.excepthook`, `sys.unraisablehook`, `threading.excepthook`, and the opt-in asyncio handler from `install_asyncio_handler()`) deliberately call `os._exit(1)` on unraisable/thread/asyncio errors — policy choice to fail the whole process rather than let a crashed thread leave a zombie app. This bypasses `atexit`, which is intentional.
 - `_formatter.py` — `LogFormatter` prepends severity emoji (skipped if message already starts with an emoji, detected via `unicodedata.category == "So"`), logger name, thread/task name, optional timestamp. Module-level globals `log_prefix`, `log_time_format`, `log_timezone`, `skip_traceback_types` are mutated by `_install._configure()` and `skip_traceback_for()`.
-- `_filter.py` — `LogFilter` does per-minute spam suppression, keyed by a "signature" (format string + string args with digits replaced by `#`). DEBUG messages and records with `extra={"repeat_ok": True}` bypass the filter. Module-level `repeat_per_minute` is the knob.
+- `_filter.py` — `LogFilter` does per-minute spam suppression, keyed by a "signature" (format string + string args with digits replaced by `#`). DEBUG messages and records with `extra={"repeat_ok": True}` bypass the filter. Module-level `repeat_burst` and `repeat_delay` are the knobs.
 - `_exit.py` — `exit()` helper: critical-log then `SystemExit`.
 
 Tests run `try_ok_logging_setup.py` as a subprocess and assert on exact stderr/stdout text — so changes to formatting output must be reflected in the expected strings in `test_ok_logging_setup.py`. Don't mock logging; tests rely on real subprocess behavior to exercise exception hooks and signal handling.

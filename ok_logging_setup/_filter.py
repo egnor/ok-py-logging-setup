@@ -1,6 +1,5 @@
 """LogFilter installed by ok_logging_setup.install()"""
 
-import collections
 import logging
 import re
 
@@ -13,9 +12,9 @@ class LogFilter(logging.Filter):
 
     def __init__(self):
         super().__init__()
-        self._allow_time: dict[tuple, float] = {}
+        self._allow_time: dict[tuple[str, ...] | str, float] = {}
         self._allow_max = 0.0
-        self._prev_allow_time: dict[tuple, float] = {}
+        self._prev_allow_time: dict[tuple[str, ...] | str, float] = {}
         self._prev_allow_max = 0.0
 
     def filter(self, record: logging.LogRecord):
@@ -36,7 +35,7 @@ class LogFilter(logging.Filter):
         if allow_time > record.created:
             return False
 
-        min_allow_time = record.created - repeat_delay * repeat_burst
+        min_allow_time = record.created - repeat_delay * (repeat_burst - 1)
         if self._prev_allow_max < min_allow_time:
             self._prev_allow_time = self._allow_time
             self._prev_allow_max = self._allow_max
@@ -51,6 +50,6 @@ class LogFilter(logging.Filter):
         self._allow_time[sig] = new_allow_time
         self._allow_max = max(self._allow_max, new_allow_time)
         if new_allow_time > record.created:
-            record.msg = f"{record.msg} [⏱️ ]"
+            record.msg = f"{record.msg} ⏱️ [rate limiting]"
 
         return True
