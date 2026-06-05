@@ -35,7 +35,7 @@ def test_defaults():
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -57,7 +57,7 @@ def test_install_in_thread():
         <Thread Name> This is an info message in a thread
         🔥 <Thread Name> This is an error message in a thread
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -68,7 +68,7 @@ def test_keyboard_interrupt():
 
         ❌ KeyboardInterrupt (^C)! ❌
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -78,7 +78,7 @@ def test_logging_exit():
         """\
         💥 This is a program exit message
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -94,7 +94,7 @@ def test_uncaught_exception():
             raise Exception("This is an uncaught exception")
         Exception: This is an uncaught exception
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -105,7 +105,7 @@ def test_uncaught_skip_traceback():
         💥 Uncaught exception
         SkipTracebackException: This is an uncaught exception with traceback skipped
         This is an info message in an atexit hook
-    """
+        """
     )
 
 
@@ -122,7 +122,7 @@ def test_uncaught_thread_exception():
           File XXX, in thread_exception
             raise Exception("This is an uncaught thread exception")
         Exception: This is an uncaught thread exception
-    """
+        """
     )
 
 
@@ -137,7 +137,7 @@ def test_uncaught_asyncio_exception():
           File XXX, in asyncio_loop_exception
             raise Exception("This is an uncaught asyncio event loop exception")
         Exception: This is an uncaught asyncio event loop exception
-    """
+        """
     )
 
 
@@ -150,7 +150,7 @@ def test_unraisable_exception():
           File XXX, in __del__
             raise Exception("This is an 'unraisable' exception")
         Exception: This is an 'unraisable' exception
-    """
+        """
     )
 
 
@@ -162,7 +162,7 @@ def test_env_levels():
         🔥 foo: This is an error message for 'foo'
         bar.bat: This is an info message for 'bar.bat'
         🔥 bar.bat: This is an error message for 'bar.bat'
-    """
+        """
     )
 
 
@@ -220,17 +220,17 @@ def test_env_terminator():
 
 
 def test_env_time_format():
-    av = ["--fake-time=1/1/2020 12:00Z"]
+    av = ["--fake-time=1/1/2020 12:34:56.789Z"]
     env = {
         **os.environ,
         "OK_LOGGING_LEVEL": "critical",  # less output
-        "OK_LOGGING_TIME_FORMAT": "%H:%M",
+        "OK_LOGGING_TIME_FORMAT": "%H:%M:%S.%2f",
         "OK_LOGGING_TIMEZONE": "America/New_York",
     }
     assert run_try(*av, env=env).stderr == textwrap.dedent(
         """\
-        07:00 💥 This is a critical message
-    """
+        07:34:56.78 💥 This is a critical message
+        """
     )
 
 

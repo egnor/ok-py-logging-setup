@@ -94,7 +94,7 @@ This string is printed after each log message to end the line.
 
 ### `$OK_LOGGING_TIME_FORMAT` and `$OK_LOGGING_TIMEZONE`
 
-- to timestamp log messages, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes)
+- to timestamp log messages, set `$OK_LOGGING_TIME_FORMAT` to a [`strftime` format](https://docs.python.org/3/library/datetime.html#format-codes), eg. `%H:%M:%S.%3f`
 - if set, `$OK_LOGGING_TIMEZONE` ([from this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)) is used for timestamps
 
 ## Spam protection rate limiting
@@ -106,36 +106,36 @@ DEBUG messages are exempt as they are assumed to be noisy by design. Messages wi
 `$OK_LOGGING_REPEAT_BURST` and `$OK_LOGGING_REPEAT_DELAY` control the rate limiting. For example, with the defaults of `20` and `1.0`, after 20 similar messages in excess of 1/sec, further messages of that type are culled to no more than 1/sec with a `⏱️ [rate limiting]` marker.
 
 ```text
-% OK_LOGGING_TIME_FORMAT=%H:%M:%S.%f ./try_ok_logging_setup.py --spam=50 --spam-sleep=0.2 --fake-time 11:40
-11:40:00.000000 Spam message 1
-11:40:00.200000 Spam message 2
-11:40:00.400000 Spam message 3
-11:40:00.600000 Spam message 4
-11:40:00.800000 Spam message 5
-11:40:01.000000 Spam message 6
-11:40:01.200000 Spam message 7
-11:40:01.400000 Spam message 8
-11:40:01.600000 Spam message 9
-11:40:01.800000 Spam message 10
-11:40:02.000000 Spam message 11
-11:40:02.200000 Spam message 12
-11:40:02.400000 Spam message 13
-11:40:02.600000 Spam message 14
-11:40:02.800000 Spam message 15
-11:40:03.000000 Spam message 16
-11:40:03.200000 Spam message 17
-11:40:03.400000 Spam message 18
-11:40:03.600000 Spam message 19
-11:40:03.800000 Spam message 20
-11:40:04.000000 Spam message 21
-11:40:04.200000 Spam message 22
-11:40:04.400000 Spam message 23
-11:40:04.600000 Spam message 24 ⏱️ [rate limiting]
-11:40:05.000000 Spam message 26 ⏱️ [rate limiting]
-11:40:06.000000 Spam message 31 ⏱️ [rate limiting]
-11:40:07.000000 Spam message 36 ⏱️ [rate limiting]
-11:40:08.000000 Spam message 41 ⏱️ [rate limiting]
-11:40:09.000000 Spam message 46 ⏱️ [rate limiting]
+% OK_LOGGING_TIME_FORMAT=%H:%M:%S.%3f ./try_ok_logging_setup.py --spam=50 --spam-sleep=0.2 --fake-time 11:40
+11:40:00.000 Spam message 1
+11:40:00.200 Spam message 2
+11:40:00.400 Spam message 3
+11:40:00.600 Spam message 4
+11:40:00.800 Spam message 5
+11:40:01.000 Spam message 6
+11:40:01.200 Spam message 7
+11:40:01.400 Spam message 8
+11:40:01.600 Spam message 9
+11:40:01.800 Spam message 10
+11:40:02.000 Spam message 11
+11:40:02.200 Spam message 12
+11:40:02.400 Spam message 13
+11:40:02.600 Spam message 14
+11:40:02.800 Spam message 15
+11:40:03.000 Spam message 16
+11:40:03.200 Spam message 17
+11:40:03.400 Spam message 18
+11:40:03.600 Spam message 19
+11:40:03.800 Spam message 20
+11:40:04.000 Spam message 21
+11:40:04.200 Spam message 22
+11:40:04.400 Spam message 23
+11:40:04.600 Spam message 24 ⏱️ [rate limiting]
+11:40:05.000 Spam message 26 ⏱️ [rate limiting]
+11:40:06.000 Spam message 31 ⏱️ [rate limiting]
+11:40:07.000 Spam message 36 ⏱️ [rate limiting]
+11:40:08.000 Spam message 41 ⏱️ [rate limiting]
+11:40:09.000 Spam message 46 ⏱️ [rate limiting]
 ...
 ```
 
@@ -173,9 +173,9 @@ If the message is logged from a named thread or a named asyncio task, the name i
 If you want timestamps, set `$OK_LOGGING_TIME_FORMAT` (see above):
 
 ```bash
-$ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S"
+$ export OK_LOGGING_TIME_FORMAT="%m-%d %H:%M:%S.%2f"
 ...
-04-30 22:53:26 🔥 This is an error message
+04-30 22:53:26.12 🔥 This is an error message
 ```
 
 Exceptions are formatted in the normal way:

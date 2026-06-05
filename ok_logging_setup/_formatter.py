@@ -8,6 +8,7 @@ import unicodedata
 
 TASK_IGNORE_RE = re.compile(r"(|Task-\d+)")
 THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
+TIME_FRACTION_RE = re.compile(r"%\.?([1-6])f")
 
 skip_traceback_types: tuple[typing.Type[BaseException], ...] = ()
 log_prefix = ""
@@ -42,7 +43,11 @@ class LogFormatter(logging.Formatter):
 
         if log_time_format:
             dt = datetime.datetime.fromtimestamp(rec.created, log_timezone)
-            out = f"{dt.strftime(log_time_format)} {out}"
+            format = TIME_FRACTION_RE.sub(
+                lambda m: f"{dt.microsecond:06d}"[: int(m.group(1) or "6")],
+                log_time_format,
+            )
+            out = f"{dt.strftime(format)} {out}"
 
         exc, stack = rec.exc_info, rec.stack_info
         if exc and exc[0] and issubclass(exc[0], skip_traceback_types):
