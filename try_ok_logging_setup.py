@@ -75,6 +75,15 @@ def main(args):
     if args.uncaught_exception:
         raise Exception("This is an uncaught exception")
 
+    if num := args.uncaught_exception_group:
+        exceptions = []
+        for i in range(args.uncaught_exception_group):
+            try:
+                raise Exception(f"Grouped exception {i + 1}/{num}")
+            except Exception as e:
+                exceptions.append(e)
+        raise ExceptionGroup("This is an exception group", exceptions)
+
     if args.uncaught_skip_traceback:
         raise SkipTracebackException(
             "This is an uncaught exception with traceback skipped"
@@ -150,6 +159,7 @@ if __name__ == "__main__":
     fatal_args.add_argument("--ok-logging-exit", action="store_true")
     fatal_args.add_argument("--sys-exit", action="store_true")
     fatal_args.add_argument("--uncaught-exception", action="store_true")
+    fatal_args.add_argument("--uncaught-exception-group", type=int, default=0)
     fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
     fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
     fatal_args.add_argument("--uncaught-asyncio-exception", action="store_true")

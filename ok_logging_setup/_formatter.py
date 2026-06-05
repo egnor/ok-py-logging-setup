@@ -1,20 +1,24 @@
 """LogFormatter installed by ok_logging_setup.install()"""
 
+import builtins
 import datetime
 import logging
 import re
 import typing
 import unicodedata
 
+GROUP_TYPE = getattr(builtins, "BaseExceptionGroup", None)  # added in 3.11
+
 TASK_IGNORE_RE = re.compile(r"(|Task-\d+)")
 THREAD_IGNORE_RE = re.compile(r"(|MainThread|Thread-\d+)")
 TIME_FRACTION_RE = re.compile(r"%\.?([1-6])f")
 
-skip_traceback_types: tuple[typing.Type[BaseException], ...] = ()
 log_prefix = ""
 log_terminator = "\n"
 log_time_format = ""
 log_timezone = None
+
+skip_traceback_types: tuple[typing.Type[BaseException], ...] = ()
 
 
 class LogFormatter(logging.Formatter):
@@ -50,11 +54,21 @@ class LogFormatter(logging.Formatter):
             out = f"{dt.strftime(format)} {out}"
 
         exc, stack = rec.exc_info, rec.stack_info
-        if exc and exc[0] and issubclass(exc[0], skip_traceback_types):
-            exc = (exc[0], exc[1], None)
-            stack = None
-        if exc:
+        if exc and exc[0]:
+            # Simplify single-member exception groups
+            while (
+                GROUP_TYPE
+                and issubclass(exc[0], GROUP_TYPE)
+                and len(excs := exc[1].exceptions) == 1
+            ):
+                exc = (type(excs[0]), excs[0], excs[0].__traceback__)
+
+            # Discard stack trace as configured
+            if issubclass(exc[0], skip_traceback_types):
+                exc, stack = (exc[0], exc[1], None), None
+
             out = f"{out.rstrip()}\n{self.formatException(exc)}"
+
         if stack:
             out = f"{out.rstrip()}\nStack:\n{stack}"
 
