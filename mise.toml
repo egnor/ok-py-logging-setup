@@ -1,6 +1,6 @@
 [tools]
 python = "3.11"
-uv = "latest"
+uv = "0.11"
 
 [settings]
 experimental = true
@@ -10,4 +10,4 @@ python.uv_venv_auto = true
 postinstall = "uv sync"
 
 [tasks]
-check = ["uv sync", "black --check .", "ruff check", "mypy", "pytest"]
+check = ["uv sync", "ruff check", "mypy", "pytest"]

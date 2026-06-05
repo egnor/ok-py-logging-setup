@@ -75,19 +75,20 @@ def main(args):
     if args.uncaught_exception:
         raise Exception("This is an uncaught exception")
 
-    if num := args.uncaught_exception_group:
-        exceptions = []
-        for i in range(args.uncaught_exception_group):
-            try:
-                raise Exception(f"Grouped exception {i + 1}/{num}")
-            except Exception as e:
-                exceptions.append(e)
-        raise ExceptionGroup("This is an exception group", exceptions)
-
-    if args.uncaught_skip_traceback:
+    if args.uncaught_exception_skiptb:
         raise SkipTracebackException(
             "This is an uncaught exception with traceback skipped"
         )
+
+    if num := (args.uncaught_group or args.uncaught_group_skiptb):
+        exc = Exception if args.uncaught_group else SkipTracebackException
+        exceptions = []
+        for i in range(num):
+            try:
+                raise exc(f"Grouped exception {i + 1}/{num}")
+            except Exception as e:
+                exceptions.append(e)
+        raise ExceptionGroup("This is an exception group", exceptions)
 
     if args.uncaught_thread_exception:
         thread = threading.Thread(name="Thread Name", target=thread_exception)
@@ -158,11 +159,12 @@ if __name__ == "__main__":
     fatal_args.add_argument("--logging-conflict", action="store_true")
     fatal_args.add_argument("--ok-logging-exit", action="store_true")
     fatal_args.add_argument("--sys-exit", action="store_true")
-    fatal_args.add_argument("--uncaught-exception", action="store_true")
-    fatal_args.add_argument("--uncaught-exception-group", type=int, default=0)
-    fatal_args.add_argument("--uncaught-skip-traceback", action="store_true")
-    fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
     fatal_args.add_argument("--uncaught-asyncio-exception", action="store_true")
+    fatal_args.add_argument("--uncaught-exception", action="store_true")
+    fatal_args.add_argument("--uncaught-exception-skiptb", action="store_true")
+    fatal_args.add_argument("--uncaught-group", metavar="NUM", type=int)
+    fatal_args.add_argument("--uncaught-group-skiptb", metavar="NUM", type=int)
+    fatal_args.add_argument("--uncaught-thread-exception", action="store_true")
     fatal_args.add_argument("--unraisable-exception", action="store_true")
     args = parser.parse_args()
 

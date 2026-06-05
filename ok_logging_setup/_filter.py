@@ -10,7 +10,7 @@ repeat_delay = 1.0  # seconds per message when repeat_burst is hit
 class LogFilter(logging.Filter):
     DIGITS = re.compile("[0-9]+")
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._allow_time: dict[tuple[str, ...] | str, float] = {}
         self._allow_max = 0.0

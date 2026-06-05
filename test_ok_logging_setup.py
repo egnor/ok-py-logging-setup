@@ -82,6 +82,21 @@ def test_logging_exit():
     )
 
 
+def test_uncaught_asyncio_exception():
+    stderr = run_try("--uncaught-asyncio-exception", check=0).stderr
+    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
+        """\
+        💥 Uncaught exception in asyncio event loop
+        Traceback (most recent call last):
+          File XXX, in _run
+            self._context.run(self._callback, *self._args)
+          File XXX, in asyncio_loop_exception
+            raise Exception("This is an uncaught asyncio event loop exception")
+        Exception: This is an uncaught asyncio event loop exception
+        """
+    )
+
+
 def test_uncaught_exception():
     stderr = run_try("--uncaught-exception", check=0).stderr
     assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
@@ -98,12 +113,76 @@ def test_uncaught_exception():
     )
 
 
-def test_uncaught_skip_traceback():
-    stderr = run_try("--uncaught-skip-traceback", check=0).stderr
+def test_uncaught_exception_skiptb():
+    stderr = run_try("--uncaught-exception-skiptb", check=0).stderr
     assert stderr == textwrap.dedent(
         """\
         💥 Uncaught exception
         SkipTracebackException: This is an uncaught exception with traceback skipped
+        This is an info message in an atexit hook
+        """
+    )
+
+
+def test_uncaught_group_of_1():
+    stderr = run_try("--uncaught-group=1", check=0).stderr
+    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
+        """\
+        💥 Uncaught exception
+        Traceback (most recent call last):
+          File XXX, in main
+            raise exc(f"Grouped exception {i + 1}/{num}")
+        Exception: Grouped exception 1/1
+        This is an info message in an atexit hook
+        """
+    )
+
+
+def test_uncaught_group_of_3():
+    stderr = run_try("--uncaught-group=3", check=0).stderr
+    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
+        """\
+        💥 Uncaught exception
+          + Exception Group Traceback (most recent call last):
+          |   File XXX, in <module>
+          |     main(args)
+          |   File XXX, in main
+          |     raise ExceptionGroup("This is an exception group", exceptions)
+          | ExceptionGroup: This is an exception group (3 sub-exceptions)
+          +-+---------------- 1 ----------------
+            | Traceback (most recent call last):
+            |   File XXX, in main
+            |     raise exc(f"Grouped exception {i + 1}/{num}")
+            | Exception: Grouped exception 1/3
+            +---------------- 2 ----------------
+            | Traceback (most recent call last):
+            |   File XXX, in main
+            |     raise exc(f"Grouped exception {i + 1}/{num}")
+            | Exception: Grouped exception 2/3
+            +---------------- 3 ----------------
+            | Traceback (most recent call last):
+            |   File XXX, in main
+            |     raise exc(f"Grouped exception {i + 1}/{num}")
+            | Exception: Grouped exception 3/3
+            +------------------------------------
+        This is an info message in an atexit hook
+        """
+    )
+
+
+def test_uncaught_group_skiptb():
+    stderr = run_try("--uncaught-group-skiptb=3", check=0).stderr
+    assert stderr == textwrap.dedent(
+        """\
+        💥 Uncaught exception
+          | ExceptionGroup: This is an exception group (3 sub-exceptions)
+          +-+---------------- 1 ----------------
+            | SkipTracebackException: Grouped exception 1/3
+            +---------------- 2 ----------------
+            | SkipTracebackException: Grouped exception 2/3
+            +---------------- 3 ----------------
+            | SkipTracebackException: Grouped exception 3/3
+            +------------------------------------
         This is an info message in an atexit hook
         """
     )
@@ -122,21 +201,6 @@ def test_uncaught_thread_exception():
           File XXX, in thread_exception
             raise Exception("This is an uncaught thread exception")
         Exception: This is an uncaught thread exception
-        """
-    )
-
-
-def test_uncaught_asyncio_exception():
-    stderr = run_try("--uncaught-asyncio-exception", check=0).stderr
-    assert re.sub(r'".*", line \d+', "XXX", stderr) == textwrap.dedent(
-        """\
-        💥 Uncaught exception in asyncio event loop
-        Traceback (most recent call last):
-          File XXX, in _run
-            self._context.run(self._callback, *self._args)
-          File XXX, in asyncio_loop_exception
-            raise Exception("This is an uncaught asyncio event loop exception")
-        Exception: This is an uncaught asyncio event loop exception
         """
     )
 

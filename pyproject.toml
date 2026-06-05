@@ -6,25 +6,28 @@ readme = "README.md"
 requires-python = ">=3.10"
 urls.Homepage = "https://github.com/egnor/ok-py-logging-setup#readme"
 urls.Repository = "https://github.com/egnor/ok-py-logging-setup.git"
-version = "0.16"
+version = "0.17"
 dependencies = []
 
 [build-system]
-requires = ["uv_build>=0.9.13,<0.11.0"]
+requires = ["uv_build>=0.9.13,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["black", "mypy", "pytest", "ruff", "time-machine"]
-
-[tool.black]
-line-length = 80
+dev = ["mypy", "pytest", "ruff", "time-machine"]
 
 [tool.mypy]
 exclude_gitignore = true
 files = "."
 
+[tool.ruff]
+line-length = 80
+
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[tool.ruff.per-file-target-version]
+"try_ok_logging_setup.py" = "py311"
 
 [tool.uv.build-backend]
 module-root = ""
