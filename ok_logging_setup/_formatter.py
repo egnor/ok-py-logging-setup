@@ -56,8 +56,8 @@ class LogFormatter(logging.Formatter):
 
         einfo, stack = rec.exc_info, rec.stack_info
         if einfo and einfo[1]:
-            if new_ex := _simplify_exception(einfo[1]):
-                einfo = (type(new_ex), new_ex, new_ex.__traceback__)
+            if (ex := _simplify_exception(einfo[1])) and ex is not einfo[1]:
+                einfo = (type(ex), ex, ex.__traceback__)
             out = f"{out.rstrip()}\n{self.formatException(einfo)}"
 
         if stack:
@@ -93,30 +93,30 @@ def _simplify_exception(exc: BaseException | None) -> BaseException | None:
     new_exc: BaseException | None = None
     if base_exception_group_type and isinstance(exc, base_exception_group_type):
         contained = exc.exceptions  # type: ignore[attr-defined]
-        new_contained = tuple([_simplify_exception(e) or e for e in contained])
+        new_contained = tuple(_simplify_exception(e) for e in contained)
         if len(new_contained) == 1:
             return new_contained[0]
         if new_contained != contained:
             new_exc = exc.derive(new_contained)  # type: ignore[attr-defined]
             new_exc.__cause__ = exc.__cause__
             new_exc.__context__ = exc.__context__
-            if any(e.__traceback__ for e in new_contained):
+            if any(e and e.__traceback__ for e in new_contained):
                 new_exc.__traceback__ = exc.__traceback__
 
     if isinstance(exc, skip_traceback_types):
         new_exc = new_exc or copy.copy(exc)
         new_exc.__traceback__ = None
 
-    if new_cause := _simplify_exception(exc.__cause__):
+    if (cause := _simplify_exception(exc.__cause__)) is not exc.__cause__:
         new_exc = new_exc or copy.copy(exc)
-        new_exc.__cause__ = new_cause
+        new_exc.__cause__ = cause
 
     if not exc.__suppress_context__:
-        if new_context := _simplify_exception(exc.__context__):
+        if (ctx := _simplify_exception(exc.__context__)) is not exc.__context__:
             new_exc = new_exc or copy.copy(exc)
-            new_exc.__context__ = new_context
+            new_exc.__context__ = ctx
 
-    return new_exc
+    return new_exc or exc
 
 
 def _starts_with_emoji(str):
